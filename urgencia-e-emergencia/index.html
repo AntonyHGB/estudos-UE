@@ -317,7 +317,7 @@ mark{background:var(--accent-soft);color:var(--text);font-weight:700;padding:0 2
   <aside id="sidebar"></aside>
   <main id="main"></main>
 </div>
-<script id="site-data" type="application/json">{"siteKey":"urgencia-e-emergencia","title":"Urgência e Emergência","short":"Urg. Emerg.","emoji":"🚑","fp":57007,"topics":[{"id":"00","fullTitle":"00 — Modelo [TEMP]","shortTitle":"Modelo [TEMP]","subtitle":"⚠️ Tema temporário. Este arquivo existe só para o site montar e mostrar o formato esperado de um tema — será apagado quando os temas reais (01, 02, ...) forem escritos. O conteúdo abaixo NÃO é material de estudo.","toc":[{"id":"sec-1-resumo-conceitual","title":"1. Resumo conceitual"}],"studyHtml":"\u003csection class=\"study-sec\" id=\"sec-1-resumo-conceitual\">\u003ch2>1. Resumo conceitual\u003c/h2>\u003ch3 id=\"h-1-1-como-um-tema-é-organizado\">1.1 Como um tema é organizado\u003c/h3>\n\u003cp>Cada tema é um arquivo \u003ccode>NN-titulo-em-kebab-case.md\u003c/code> nesta pasta, onde \u003ccode>NN\u003c/code> é o número de dois dígitos que liga o tema ao \u003ccode>quiz.json\u003c/code>. Um tema tem:\u003c/p>\n\u003cul>\u003cli>\u003cstrong>título\u003c/strong> em \u003ccode># NN — Nome do tema\u003c/code>;\u003c/li>\u003cli>\u003cstrong>subtítulo\u003c/strong> em uma citação \u003ccode>&amp;gt;\u003c/code> logo abaixo do título — é a frase que aparece no card;\u003c/li>\u003cli>\u003cstrong>seções de estudo\u003c/strong> em \u003ccode>##\u003c/code>, que viram o corpo da aba Estudo;\u003c/li>\u003cli>\u003cstrong>uma seção de perguntas abertas\u003c/strong> cujo título contenha \"perguntas\", \"cenários resolvidos\" ou \"estudos de caso\" — cada questão começa com \u003ccode>**🟢 pergunta**\u003c/code>, \u003ccode>**🟡 ...**\u003c/code> ou \u003ccode>**🔴 ...**\u003c/code> em uma linha própria, e o resto vira a resposta revelável.\u003c/li>\u003c/ul>\n\u003ch3 id=\"h-1-2-níveis-de-dificuldade\">1.2 Níveis de dificuldade\u003c/h3>\n\u003cdiv class=\"table-wrap\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Marca\u003c/th>\u003cth>Nível\u003c/th>\u003cth>Uso esperado\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>🟢\u003c/td>\u003ctd>Básico\u003c/td>\u003ctd>conduta inicial, definição, o que não pode errar\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🟡\u003c/td>\u003ctd>Intermediário\u003c/td>\u003ctd>decisão entre condutas, doses, indicações\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🔴\u003c/td>\u003ctd>Avançado\u003c/td>\u003ctd>cenário com armadilha, contraindicação, priorização\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\n\u003ch3 id=\"h-1-3-regras-de-escrita-do-quiz\">1.3 Regras de escrita do quiz\u003c/h3>\n\u003cp>As questões de múltipla escolha ficam no \u003ccode>quiz.json\u003c/code> da área, com a chave do tema (\u003ccode>\"00\"\u003c/code>, \u003ccode>\"01\"\u003c/code>, ...). Cada questão tem nível, enunciado, quatro alternativas, índice da correta (contando de zero) e explicação. As regras de autoria — alternativas de tamanho parecido, distratoras plausíveis, nunca citar a alternativa por letra na explicação — estão no README da raiz e no material de referência local.\u003c/p>\u003c/section>","questionsIntroHtml":"","cards":[{"titleHtml":"🟢 [TEMP] O que este tema de modelo demonstra?","level":"🟢","levelName":"basico","bodyHtml":"\u003cp>\u003cstrong>Resposta modelo:\u003c/strong> Ele demonstra a anatomia de um arquivo de tema: título numerado, subtítulo em citação, seções de estudo com \u003ccode>##\u003c/code>/\u003ccode>###\u003c/code> e a seção de perguntas abertas com marcadores de nível. Quando os temas reais chegarem, este arquivo é apagado.\u003c/p>"},{"titleHtml":"🟢 [TEMP] Por que as questões de múltipla escolha ficam no \u003ccode>quiz.json\u003c/code> e não no markdown?","level":"🟢","levelName":"basico","bodyHtml":"\u003cp>\u003cstrong>Resposta modelo:\u003c/strong> Porque o quiz precisa de estrutura rígida para ser validado e balanceado pelo build — quatro alternativas, índice da correta e explicação são validados a cada \u003ccode>node build-site.mjs\u003c/code>. Separar o quiz do texto também deixa a rotação das posições da correta (\u003ccode>balancear-quiz.mjs\u003c/code>) acontecer sem tocar no conteúdo estudado.\u003c/p>"}],"quiz":[{"n":"🟢","levelName":"basico","q":"[TEMP] Em uma PCR em adulto, qual é a primeira intervenção que comprovadamente aumenta a sobrevida?","a":["Administrar adrenalina intravenosa antes de qualquer compressão","Iniciar compressões torácicas de alta qualidade o quanto antes","Intubar o paciente para garantir uma via aérea definitiva","Aplicar ventilação com bolsa-válvula-máscara isoladamente"],"c":1,"e":"A cadeia de sobrevivência começa pelas compressões de alta qualidade: 100 a 120 por minuto, 5 a 6 cm de profundidade, com retorno total do tórax. Adrenalina, via aérea avançada e desfibrilação entram conforme o ritmo, depois do início das compressões e sem interrompê-las por tempo prolongado. Questão temporária do modelo [TEMP]."},{"n":"🟢","levelName":"basico","q":"[TEMP] Na avaliação primária do paciente grave, o que significa a etapa D do ABCDE?","a":["Dor: quantificar a intensidade antes de qualquer tratamento","Desfibrilação: checar o ritmo e indicar choque se necessário","Drogas: revisar as medicações de uso contínuo antes de tudo","Déficit neurológico: nível de consciência e resposta pupilar"],"c":3,"e":"No ABCDE, D é disability: escala de coma de Glasgow e pupilas. A desfibrilação pertence ao tratamento da parada, drogas e dor não organizam a avaliação primária, e a exposição completa é o E. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] O monitor mostra ritmo chocável. Qual é a conduta imediata?","a":["Desfibrilar imediatamente e retomar compressões em seguida","Administrar adrenalina e aguardar o próximo ciclo de análise","Intubar antes de qualquer choque para proteger a via aérea","Iniciar antiarrítmico e reavaliar o ritmo após dois minutos"],"c":0,"e":"FV e TV sem pulso são os ritmos chocáveis, e a desfibrilação é a intervenção que muda o desfecho; cada minuto de atraso reduz a chance de retorno da circulação. Adrenalina e antiarrítmicos vêm depois do choque e das compressões. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] Qual é a janela clássica para trombólise no AVC isquêmico agudo?","a":["Até 12 horas do início, em qualquer quadro clínico","Até 24 horas do início, após tomografia sem contraste","Até 4,5 horas do início dos sintomas, sem contraindicações","Até 6 horas, contadas a partir da chegada ao hospital"],"c":2,"e":"A janela clássica é de até 4,5 horas desde o início dos sintomas, e o tempo porta-agulha deve ser curto. Casos selecionados podem ter janela estendida após imagem avançada, em decisão do neurologista. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] Paciente com intoxicação por opioide e depressão respiratória. Qual é o antídoto?","a":["Atropina em doses repetidas até a melhora do quadro","Flumazenil, mesmo com uso crônico de benzodiazepínico","N-acetilcisteína, iniciada nas primeiras oito horas","Naloxona, com titulação até recuperar a ventilação"],"c":3,"e":"Naloxona é o antagonista opioide e reverte a depressão respiratória; a titulação evita abstinência abrupta. Flumazenil é para benzodiazepínicos e pode precipitar convulsão; acetilcisteína é para paracetamol; atropina é para intoxicação por colinérgicos. Questão temporária do modelo [TEMP]."},{"n":"🟢","levelName":"basico","q":"[TEMP] Anafilaxia com hipotensão após picada de inseto. Qual é o tratamento de primeira linha?","a":["Corticoide intravenoso isolado, com observação prolongada","Adrenalina intramuscular na face lateral da coxa","Anti-histamínico oral e reavaliação em trinta minutos","Soro fisiológico em bolus como única medida inicial"],"c":1,"e":"Adrenalina IM no vasto lateral é a primeira medida: ela reverte broncoespasmo e hipotensão. Corticoide e anti-histamínico são adjuvantes e não substituem a adrenalina, que deve ser repetida se não houver resposta. Questão temporária do modelo [TEMP]."},{"n":"🔴","levelName":"avancado","q":"[TEMP] Hipercalemia grave com alargamento do QRS. Qual medida estabiliza o miocárdio primeiro?","a":["Furosemida em dose alta para eliminar o potássio do organismo","Insulina com glicose para deslocar o potássio para o intracelular","Gluconato de cálcio intravenoso para estabilizar a membrana","Dieta restrita em potássio e reavaliação laboratorial seriada"],"c":2,"e":"Com alteração eletrocardiográfica, o cálcio vem primeiro para proteger o miocárdio; insulina com glicose e beta-2 agonista deslocam o potássio para dentro da célula, e a remoção definitiva exige diurético ou diálise. Questão temporária do modelo [TEMP]."},{"n":"🔴","levelName":"avancado","q":"[TEMP] TEP maciço com instabilidade hemodinâmica e sem contraindicação. Qual é a conduta?","a":["Trombólise sistêmica com alteplase, além da anticoagulação","Anticoagulação plena isolada, com reavaliação em 24 horas","Filtro de veia cava, indicado de rotina nesse cenário","Apenas suporte hemodinâmico, sem qualquer antitrombótico"],"c":0,"e":"No TEP com instabilidade, a trombólise é a conduta que reduz mortalidade quando não há contraindicação; anticoagulação isolada é insuficiente nesse cenário. Filtro de veia cava tem indicações restritas, e suporte isolado não trata a causa. Questão temporária do modelo [TEMP]."}]}]}</script>
+<script id="site-data" type="application/json">{"siteKey":"urgencia-e-emergencia","title":"Urgência e Emergência","short":"Urg. Emerg.","emoji":"🚑","fp":57007,"chash":65010,"topics":[{"id":"00","fullTitle":"00 — Modelo [TEMP]","shortTitle":"Modelo [TEMP]","subtitle":"⚠️ Tema temporário. Este arquivo existe só para o site montar e mostrar o formato esperado de um tema — será apagado quando os temas reais (01, 02, ...) forem escritos. O conteúdo abaixo NÃO é material de estudo.","toc":[{"id":"sec-1-resumo-conceitual","title":"1. Resumo conceitual"}],"studyHtml":"\u003csection class=\"study-sec\" id=\"sec-1-resumo-conceitual\">\u003ch2>1. Resumo conceitual\u003c/h2>\u003ch3 id=\"h-1-1-como-um-tema-é-organizado\">1.1 Como um tema é organizado\u003c/h3>\n\u003cp>Cada tema é um arquivo \u003ccode>NN-titulo-em-kebab-case.md\u003c/code> nesta pasta, onde \u003ccode>NN\u003c/code> é o número de dois dígitos que liga o tema ao \u003ccode>quiz.json\u003c/code>. Um tema tem:\u003c/p>\n\u003cul>\u003cli>\u003cstrong>título\u003c/strong> em \u003ccode># NN — Nome do tema\u003c/code>;\u003c/li>\u003cli>\u003cstrong>subtítulo\u003c/strong> em uma citação \u003ccode>&amp;gt;\u003c/code> logo abaixo do título — é a frase que aparece no card;\u003c/li>\u003cli>\u003cstrong>seções de estudo\u003c/strong> em \u003ccode>##\u003c/code>, que viram o corpo da aba Estudo;\u003c/li>\u003cli>\u003cstrong>uma seção de perguntas abertas\u003c/strong> cujo título contenha \"perguntas\", \"cenários resolvidos\" ou \"estudos de caso\" — cada questão começa com \u003ccode>**🟢 pergunta**\u003c/code>, \u003ccode>**🟡 ...**\u003c/code> ou \u003ccode>**🔴 ...**\u003c/code> em uma linha própria, e o resto vira a resposta revelável.\u003c/li>\u003c/ul>\n\u003ch3 id=\"h-1-2-níveis-de-dificuldade\">1.2 Níveis de dificuldade\u003c/h3>\n\u003cdiv class=\"table-wrap\">\u003ctable>\u003cthead>\u003ctr>\u003cth>Marca\u003c/th>\u003cth>Nível\u003c/th>\u003cth>Uso esperado\u003c/th>\u003c/tr>\u003c/thead>\u003ctbody>\u003ctr>\u003ctd>🟢\u003c/td>\u003ctd>Básico\u003c/td>\u003ctd>conduta inicial, definição, o que não pode errar\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🟡\u003c/td>\u003ctd>Intermediário\u003c/td>\u003ctd>decisão entre condutas, doses, indicações\u003c/td>\u003c/tr>\u003ctr>\u003ctd>🔴\u003c/td>\u003ctd>Avançado\u003c/td>\u003ctd>cenário com armadilha, contraindicação, priorização\u003c/td>\u003c/tr>\u003c/tbody>\u003c/table>\u003c/div>\n\u003ch3 id=\"h-1-3-regras-de-escrita-do-quiz\">1.3 Regras de escrita do quiz\u003c/h3>\n\u003cp>As questões de múltipla escolha ficam no \u003ccode>quiz.json\u003c/code> da área, com a chave do tema (\u003ccode>\"00\"\u003c/code>, \u003ccode>\"01\"\u003c/code>, ...). Cada questão tem nível, enunciado, quatro alternativas, índice da correta (contando de zero) e explicação. As regras de autoria — alternativas de tamanho parecido, distratoras plausíveis, nunca citar a alternativa por letra na explicação — estão no README da raiz e no material de referência local.\u003c/p>\u003c/section>","questionsIntroHtml":"","cards":[{"titleHtml":"🟢 [TEMP] O que este tema de modelo demonstra?","level":"🟢","levelName":"basico","bodyHtml":"\u003cp>\u003cstrong>Resposta modelo:\u003c/strong> Ele demonstra a anatomia de um arquivo de tema: título numerado, subtítulo em citação, seções de estudo com \u003ccode>##\u003c/code>/\u003ccode>###\u003c/code> e a seção de perguntas abertas com marcadores de nível. Quando os temas reais chegarem, este arquivo é apagado.\u003c/p>"},{"titleHtml":"🟢 [TEMP] Por que as questões de múltipla escolha ficam no \u003ccode>quiz.json\u003c/code> e não no markdown?","level":"🟢","levelName":"basico","bodyHtml":"\u003cp>\u003cstrong>Resposta modelo:\u003c/strong> Porque o quiz precisa de estrutura rígida para ser validado e balanceado pelo build — quatro alternativas, índice da correta e explicação são validados a cada \u003ccode>node build-site.mjs\u003c/code>. Separar o quiz do texto também deixa a rotação das posições da correta (\u003ccode>balancear-quiz.mjs\u003c/code>) acontecer sem tocar no conteúdo estudado.\u003c/p>"}],"quiz":[{"n":"🟢","levelName":"basico","q":"[TEMP] Em uma PCR em adulto, qual é a primeira intervenção que comprovadamente aumenta a sobrevida?","a":["Administrar adrenalina intravenosa antes de qualquer compressão","Iniciar compressões torácicas de alta qualidade o quanto antes","Intubar o paciente para garantir uma via aérea definitiva","Aplicar ventilação com bolsa-válvula-máscara isoladamente"],"c":1,"e":"A cadeia de sobrevivência começa pelas compressões de alta qualidade: 100 a 120 por minuto, 5 a 6 cm de profundidade, com retorno total do tórax. Adrenalina, via aérea avançada e desfibrilação entram conforme o ritmo, depois do início das compressões e sem interrompê-las por tempo prolongado. Questão temporária do modelo [TEMP]."},{"n":"🟢","levelName":"basico","q":"[TEMP] Na avaliação primária do paciente grave, o que significa a etapa D do ABCDE?","a":["Dor: quantificar a intensidade antes de qualquer tratamento","Desfibrilação: checar o ritmo e indicar choque se necessário","Drogas: revisar as medicações de uso contínuo antes de tudo","Déficit neurológico: nível de consciência e resposta pupilar"],"c":3,"e":"No ABCDE, D é disability: escala de coma de Glasgow e pupilas. A desfibrilação pertence ao tratamento da parada, drogas e dor não organizam a avaliação primária, e a exposição completa é o E. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] O monitor mostra ritmo chocável. Qual é a conduta imediata?","a":["Desfibrilar imediatamente e retomar compressões em seguida","Administrar adrenalina e aguardar o próximo ciclo de análise","Intubar antes de qualquer choque para proteger a via aérea","Iniciar antiarrítmico e reavaliar o ritmo após dois minutos"],"c":0,"e":"FV e TV sem pulso são os ritmos chocáveis, e a desfibrilação é a intervenção que muda o desfecho; cada minuto de atraso reduz a chance de retorno da circulação. Adrenalina e antiarrítmicos vêm depois do choque e das compressões. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] Qual é a janela clássica para trombólise no AVC isquêmico agudo?","a":["Até 12 horas do início, em qualquer quadro clínico","Até 24 horas do início, após tomografia sem contraste","Até 4,5 horas do início dos sintomas, sem contraindicações","Até 6 horas, contadas a partir da chegada ao hospital"],"c":2,"e":"A janela clássica é de até 4,5 horas desde o início dos sintomas, e o tempo porta-agulha deve ser curto. Casos selecionados podem ter janela estendida após imagem avançada, em decisão do neurologista. Questão temporária do modelo [TEMP]."},{"n":"🟡","levelName":"intermediario","q":"[TEMP] Paciente com intoxicação por opioide e depressão respiratória. Qual é o antídoto?","a":["Atropina em doses repetidas até a melhora do quadro","Flumazenil, mesmo com uso crônico de benzodiazepínico","N-acetilcisteína, iniciada nas primeiras oito horas","Naloxona, com titulação até recuperar a ventilação"],"c":3,"e":"Naloxona é o antagonista opioide e reverte a depressão respiratória; a titulação evita abstinência abrupta. Flumazenil é para benzodiazepínicos e pode precipitar convulsão; acetilcisteína é para paracetamol; atropina é para intoxicação por colinérgicos. Questão temporária do modelo [TEMP]."},{"n":"🟢","levelName":"basico","q":"[TEMP] Anafilaxia com hipotensão após picada de inseto. Qual é o tratamento de primeira linha?","a":["Corticoide intravenoso isolado, com observação prolongada","Adrenalina intramuscular na face lateral da coxa","Anti-histamínico oral e reavaliação em trinta minutos","Soro fisiológico em bolus como única medida inicial"],"c":1,"e":"Adrenalina IM no vasto lateral é a primeira medida: ela reverte broncoespasmo e hipotensão. Corticoide e anti-histamínico são adjuvantes e não substituem a adrenalina, que deve ser repetida se não houver resposta. Questão temporária do modelo [TEMP]."},{"n":"🔴","levelName":"avancado","q":"[TEMP] Hipercalemia grave com alargamento do QRS. Qual medida estabiliza o miocárdio primeiro?","a":["Furosemida em dose alta para eliminar o potássio do organismo","Insulina com glicose para deslocar o potássio para o intracelular","Gluconato de cálcio intravenoso para estabilizar a membrana","Dieta restrita em potássio e reavaliação laboratorial seriada"],"c":2,"e":"Com alteração eletrocardiográfica, o cálcio vem primeiro para proteger o miocárdio; insulina com glicose e beta-2 agonista deslocam o potássio para dentro da célula, e a remoção definitiva exige diurético ou diálise. Questão temporária do modelo [TEMP]."},{"n":"🔴","levelName":"avancado","q":"[TEMP] TEP maciço com instabilidade hemodinâmica e sem contraindicação. Qual é a conduta?","a":["Trombólise sistêmica com alteplase, além da anticoagulação","Anticoagulação plena isolada, com reavaliação em 24 horas","Filtro de veia cava, indicado de rotina nesse cenário","Apenas suporte hemodinâmico, sem qualquer antitrombótico"],"c":0,"e":"No TEP com instabilidade, a trombólise é a conduta que reduz mortalidade quando não há contraindicação; anticoagulação isolada é insuficiente nesse cenário. Filtro de veia cava tem indicações restritas, e suporte isolado não trata a causa. Questão temporária do modelo [TEMP]."}]}]}</script>
 <script>
 const DATA = JSON.parse(document.getElementById('site-data').textContent);
 DATA.readmeHtml = "<blockquote><p>⚠️ <strong>Em construção.</strong> O tema 00 é um modelo temporário com questões marcadas <code>[TEMP]</code>. O material real será escrito a partir das fontes da disciplina e substituirá o modelo.</p></blockquote>\n<p>Material de estudo de Urgência e Emergência (5º ano de medicina), no formato do site: resumos conceituais, quiz de múltipla escolha com correção imediata e questões abertas com autoavaliação.</p>\n<hr>\n<h2 id=\"h-como-usar-este-material\">Como usar este material</h2>\n<p><strong>1. Faça o diagnóstico antes de ler.</strong> Cada questão aberta tem um nível:</p>\n<div class=\"table-wrap\"><table><thead><tr><th>Marca</th><th>Nível</th><th>O que significa</th></tr></thead><tbody><tr><td>🟢</td><td><strong>Básico</strong></td><td>Conduta inicial e definições que não podem falhar.</td></tr><tr><td>🟡</td><td><strong>Intermediário</strong></td><td>Escolha entre condutas, doses e indicações.</td></tr><tr><td>🔴</td><td><strong>Avançado</strong></td><td>Cenário com armadilha, priorização e contraindicação.</td></tr></tbody></table></div>\n<p>Responda em voz alta antes de revelar a resposta. Acertar lendo é reconhecer; acertar respondendo é saber.</p>\n<p><strong>2. Use o quiz para medir.</strong> A aba <strong>Quiz</strong> corrige na hora. Erros entram em <strong>🔁 Revisar erros</strong>.</p>\n<p><strong>3. Deixe a revisão espaçada decidir a ordem.</strong> Tema com 90% ou mais de acerto volta em 14 dias; com 70% ou menos, em 3. A home marca o que está devendo.</p>\n<p><strong>4. Simulado mistura os temas</strong> e não entrega o gabarito até o fim — é o que mais se parece com a prova.</p>\n<h2 id=\"h-estrutura-dos-arquivos\">Estrutura dos arquivos</h2>\n<ul><li><code>NN-*.md</code> — resumos e questões abertas de um tema (a fonte de verdade do conteúdo);</li><li><code>quiz.json</code> — questões de múltipla escolha, com a chave do tema;</li><li><code>index.html</code>, <code>manifest.webmanifest</code>, <code>sw.js</code>, <code>icon-*.png</code> — <strong>gerados</strong> por <code>node build-site.mjs</code>; nunca editar à mão.</li></ul>\n<p>As regras completas de autoria e publicação estão no <code>README.md</code> da raiz do projeto.</p>";
@@ -392,8 +392,9 @@ function unb64url(str){
 function encodeProgress(){
   var bits = [];
   var push = function(val, n){ for (var b = n - 1; b >= 0; b--) bits.push((val >> b) & 1); };
-  push(3, 8);                    // versao do formato (3 = posicoes balanceadas por tema)
-  push(DATA.fp & 0xffff, 16);    // impressao digital do layout
+  push(4, 8);                    // versao do formato (4 = com hash do conteudo)
+  push(DATA.fp & 0xffff, 16);    // impressao digital do layout (temas e contagens)
+  push(DATA.chash & 0xffff, 16); // hash do conteudo das questoes
   DATA.topics.forEach(function(t){
     t.cards.forEach(function(_, i){ push(MARKS.indexOf(getMark(t.id, i)) < 0 ? 0 : MARKS.indexOf(getMark(t.id, i)), 2); });
   });
@@ -412,24 +413,58 @@ function decodeProgress(code){
   try { bytes = unb64url(code.trim()); } catch (e) { return { error: 'Código inválido — confira se foi copiado por inteiro.' }; }
   var pos = 0;
   var read = function(n){ var v = 0; for (var k = 0; k < n; k++){ var bit = (bytes[pos >> 3] >> (7 - (pos & 7))) & 1; v = (v << 1) | bit; pos++; } return v; };
-  var need = 24;
-  DATA.topics.forEach(function(t){ need += t.cards.length * 2 + t.quiz.length * 3; });
-  if (bytes.length * 8 < need) return { error: 'Código incompleto para este material.' };
+  var payload = 0;
+  DATA.topics.forEach(function(t){ payload += t.cards.length * 2 + t.quiz.length * 3; });
+  if (bytes.length * 8 < 24) return { error: 'Código incompleto para este material.' };
   var ver = read(8);
-  if (ver !== 3) return { error: 'Código gerado antes de um rebalanceamento do quiz — as respostas não valem mais.' };
+  if (ver !== 3 && ver !== 4) return { error: 'Código de formato antigo ou desconhecido — gere um novo na tela "Levar progresso".' };
+  if (bytes.length * 8 < (ver === 4 ? 40 : 24) + payload) return { error: 'Código incompleto para este material.' };
   var fp = read(16);
-  var marks = [], quiz = [], nMarks = 0, nQuiz = 0;
+  var chash = ver === 4 ? read(16) : null;
+  var marks = [], quiz = [], nMarks = 0, nQuiz = 0, invalidas = 0;
   DATA.topics.forEach(function(t){
     t.cards.forEach(function(_, i){ var v = read(2); marks.push([t.id, i, MARKS[v]]); if (v) nMarks++; });
   });
   DATA.topics.forEach(function(t){
-    t.quiz.forEach(function(_, i){ var v = read(3); quiz.push([t.id, i, v]); if (v) nQuiz++; });
+    t.quiz.forEach(function(q, i){
+      var v = read(3);
+      // Alternativa fora do intervalo da questão: ignora, não aplica.
+      if (v > 0 && v - 1 >= q.a.length){ invalidas++; return; }
+      quiz.push([t.id, i, v]); if (v) nQuiz++;
+    });
   });
-  return { fpMatch: fp === (DATA.fp & 0xffff), marks: marks, quiz: quiz, nMarks: nMarks, nQuiz: nQuiz };
+  return {
+    ver: ver,
+    fpMatch: fp === (DATA.fp & 0xffff),
+    conteudoOk: chash === null ? null : chash === (DATA.chash & 0xffff),
+    marks: marks, quiz: quiz, nMarks: nMarks, nQuiz: nQuiz, invalidas: invalidas
+  };
 }
 function applyProgress(p){
   p.marks.forEach(function(m){ setMark(m[0], m[1], m[2]); });
   p.quiz.forEach(function(q){ if (q[2] > 0) setQuizAns(q[0], q[1], q[2] - 1); else LS.del(SKEY + ':quiz:v3:' + q[0] + ':' + q[1]); });
+}
+function avisoVersao(p){
+  if (p.ver === 3) return '\n\nObs.: código no formato antigo — não dá para conferir se o conteúdo das questões mudou desde então.';
+  if (!p.fpMatch) return '\n\nATENÇÃO: este código foi gerado para uma versão diferente do material (temas ou quantidades mudaram). As marcações podem ficar trocadas.';
+  if (p.conteudoOk === false) return '\n\nATENÇÃO: as questões foram reescritas desde que este código foi gerado. As marcações valem, mas as respostas do quiz podem não corresponder mais.';
+  return '';
+}
+function notaInvalidas(p){
+  return p.invalidas ? '\n\n' + p.invalidas + ' resposta(s) com alternativa fora do intervalo serão ignoradas.' : '';
+}
+// Aceita link (?p=...), código puro e o backup em JSON ({v, site, code}).
+function extrairCodigo(raw){
+  var link = raw.match(/[?&]p=([A-Za-z0-9_-]+)/);
+  if (link) return { code: link[1] };
+  var t = raw.trim();
+  if (t.charAt(0) === '{'){
+    var obj;
+    try { obj = JSON.parse(t); } catch (e) { return { error: 'O texto parece um backup (.json), mas está corrompido — baixe de novo e tente importar.' }; }
+    if (!obj || typeof obj.code !== 'string' || !obj.code.trim()) return { error: 'JSON sem o campo "code" — não parece um backup deste material.' };
+    return { code: obj.code.trim(), site: typeof obj.site === 'string' ? obj.site : '' };
+  }
+  return { code: t };
 }
 
 /* ---------- desempenho por nivel ----------
@@ -695,20 +730,23 @@ function renderSync(){
     t.cards.forEach(function(_, i){ if (getMark(t.id, i)) marks++; });
     t.quiz.forEach(function(_, i){ if (getQuizAns(t.id, i) !== null) quizzes++; });
   });
-  var base = location.origin + location.pathname;
-  var link = base + '?p=' + code;
+  // Em file:// não existe link funcional entre aparelhos — só o código.
+  var local = location.protocol === 'file:';
+  var link = location.origin + location.pathname + '?p=' + code;
   var h = '<div class="topic-head"><h1>📲 Levar progresso para outro aparelho</h1>' +
           '<p class="sub">Seu progresso fica salvo só neste navegador. Para continuar de onde parou no celular (ou voltar para o PC), use o link ou o código abaixo.</p></div>';
   h += '<div class="sync-box"><h3>1. Exportar deste aparelho</h3>' +
        '<p>Marcações: <strong>' + marks + '</strong> · Respostas de quiz: <strong>' + quizzes + '</strong></p>' +
-       '<p>Abra este link no outro aparelho (mande no WhatsApp para você mesmo, por exemplo):</p>' +
-       '<textarea id="expLink" readonly onclick="this.select()">' + link + '</textarea>' +
-       '<button class="btn" onclick="copyText(document.getElementById(\'expLink\').value, this)">📋 Copiar link</button>' +
+       (local
+         ? '<p>Esta cópia foi aberta direto do disco (<code>file://</code>), onde link de compartilhamento não funciona. Copie o código abaixo e cole-o no campo de importar do outro aparelho.</p>'
+         : '<p>Abra este link no outro aparelho (mande no WhatsApp para você mesmo, por exemplo):</p>') +
+       '<textarea id="expLink" readonly onclick="this.select()">' + (local ? code : link) + '</textarea>' +
+       '<button class="btn" onclick="copyText(document.getElementById(\'expLink\').value, this)">' + (local ? '📋 Copiar código' : '📋 Copiar link') + '</button>' +
        '<button class="btn ghost" onclick="downloadBackup()">💾 Baixar backup</button>' +
        '<div id="copyNote"></div></div>';
   h += '<div class="sync-box"><h3>2. Importar neste aparelho</h3>' +
-       '<p>Cole aqui um link ou código gerado no outro aparelho:</p>' +
-       '<textarea id="impCode" placeholder="Cole o link ou o código aqui..."></textarea>' +
+       '<p>Cole aqui o link, o código ou o backup baixado no outro aparelho:</p>' +
+       '<textarea id="impCode" placeholder="Cole o link, o código ou o arquivo de backup (.json) aqui..."></textarea>' +
        '<button class="btn" onclick="doImport()">⬇️ Importar progresso</button>' +
        '<div id="impNote"></div></div>';
   h += '<div class="sync-box"><h3>Dica para o celular</h3>' +
@@ -742,15 +780,17 @@ function downloadBackup(){
 function doImport(){
   var raw = document.getElementById('impCode').value.trim();
   var note = document.getElementById('impNote');
-  if (!raw){ note.innerHTML = '<div class="note err">Cole o link ou o código primeiro.</div>'; return; }
-  var m = raw.match(/[?&]p=([A-Za-z0-9_-]+)/);
-  var code = m ? m[1] : raw;
-  var p = decodeProgress(code);
+  if (!raw){ note.innerHTML = '<div class="note err">Cole o link, o código ou o backup primeiro.</div>'; return; }
+  var ex = extrairCodigo(raw);
+  if (ex.error){ note.innerHTML = '<div class="note err">' + ex.error + '</div>'; return; }
+  var p = decodeProgress(ex.code);
   if (p.error){ note.innerHTML = '<div class="note err">' + p.error + '</div>'; return; }
-  var aviso = p.fpMatch ? '' : '\n\nATENÇÃO: este código foi gerado para uma versão diferente do material. As marcações podem ficar trocadas.';
-  if (!confirm('Importar ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz?\n\nIsto substitui o progresso deste aparelho.' + aviso)) return;
+  var aviso = avisoVersao(p);
+  if (ex.site && ex.site !== DATA.siteKey) aviso += '\n\nATENÇÃO: este backup é de "' + ex.site + '", não de "' + DATA.siteKey + '".';
+  if (!confirm('Importar ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz?\n\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) return;
   applyProgress(p);
-  note.innerHTML = '<div class="note ok">✅ Progresso importado! ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas restauradas.</div>';
+  note.innerHTML = '<div class="note ok">✅ Progresso importado! ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas restauradas.' +
+    (p.invalidas ? ' ' + p.invalidas + ' resposta(s) inválida(s) foram ignoradas.' : '') + '</div>';
   renderSidebar('sync');
 }
 
@@ -758,7 +798,25 @@ function doImport(){
    Estudar tema a tema da uma falsa sensacao de dominio, porque o contexto ja
    entrega metade da resposta. Aqui as questoes vem de todos os temas
    misturadas e o gabarito so aparece no fim. */
-function simGet(){ try { return JSON.parse(LS.get(SKEY + ':sim') || 'null'); } catch(e){ return null; } }
+var simAviso = '';
+function simGet(){
+  var s;
+  try { s = JSON.parse(LS.get(SKEY + ':sim') || 'null'); } catch(e){ s = null; }
+  if (!s) return null;
+  if (!Array.isArray(s.itens) || !Array.isArray(s.resp)){
+    simClear();
+    simAviso = 'O simulado salvo estava corrompido e foi descartado.';
+    return null;
+  }
+  // O simulado guarda a versão do material: se questões ou temas mudaram, as
+  // referências antigas não valem mais — descarta em vez de associar errado.
+  if (s.fp !== DATA.fp || s.chash !== DATA.chash){
+    simClear();
+    simAviso = 'O simulado salvo era de uma versão anterior do material e foi descartado — comece outro.';
+    return null;
+  }
+  return s;
+}
 function simSet(s){ LS.set(SKEY + ':sim', JSON.stringify(s)); }
 function simClear(){ LS.del(SKEY + ':sim'); }
 
@@ -770,7 +828,8 @@ function simIniciar(n){
     var tmp = todas[k]; todas[k] = todas[j]; todas[j] = tmp;
   }
   var itens = todas.slice(0, Math.min(n, todas.length));
-  simSet({ itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
+  simAviso = '';
+  simSet({ fp: DATA.fp, chash: DATA.chash, itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
   renderSimulado();
 }
 function simEscolher(j){
@@ -790,7 +849,9 @@ function simFinalizar(){
   renderSimulado();
 }
 function simQuestao(ref){
+  if (!Array.isArray(ref)) return null;
   var t = DATA.topics.find(function(x){ return x.id === ref[0]; });
+  if (!t || !Number.isInteger(ref[1]) || !t.quiz[ref[1]]) return null;
   return { t: t, q: t.quiz[ref[1]] };
 }
 
@@ -799,6 +860,28 @@ function renderSimulado(){
   document.getElementById('tbTitle').textContent = 'Simulado';
   var s = simGet();
   var h = '';
+
+  // Defesa extra: itens que não existem mais são removidos (ou o simulado
+  // inteiro é descartado), com aviso, sem quebrar a tela.
+  if (s){
+    var itens = [], resp = [], removidos = 0;
+    s.itens.forEach(function(ref, k){
+      if (simQuestao(ref)){ itens.push(ref); resp.push(k < s.resp.length ? s.resp[k] : null); }
+      else removidos++;
+    });
+    if (removidos){
+      if (!itens.length){
+        simClear(); s = null;
+        simAviso = 'O simulado salvo apontava para questões que não existem mais e foi descartado.';
+      } else {
+        s.itens = itens; s.resp = resp;
+        s.pos = Math.max(0, Math.min(s.pos, s.itens.length - 1));
+        simSet(s);
+        simAviso = removidos + ' questão(ões) de uma versão anterior do material foram ignoradas.';
+      }
+    }
+  }
+  if (simAviso){ h += '<div class="note err">⚠️ ' + simAviso + '</div>'; simAviso = ''; }
 
   if (!s){
     var totalQ = DATA.topics.reduce(function(a,t){ return a + t.quiz.length; }, 0);
@@ -823,7 +906,9 @@ function renderSimulado(){
     var acertos = 0;
     var porTema = {}, porNivel = { '🟢':{ok:0,n:0}, '🟡':{ok:0,n:0}, '🔴':{ok:0,n:0} };
     s.itens.forEach(function(ref, k){
-      var o = simQuestao(ref), ok = s.resp[k] === o.q.c;
+      var o = simQuestao(ref);
+      if (!o) return;
+      var ok = s.resp[k] === o.q.c;
       if (ok) acertos++;
       if (!porTema[ref[0]]) porTema[ref[0]] = { ok:0, n:0, nome:o.t.shortTitle };
       porTema[ref[0]].n++; if (ok) porTema[ref[0]].ok++;
@@ -861,7 +946,9 @@ function renderSimulado(){
 
     h += '<h2 style="margin-top:26px">Revisão das questões</h2>';
     s.itens.forEach(function(ref, k){
-      var o = simQuestao(ref), marcou = s.resp[k], ok = marcou === o.q.c;
+      var o = simQuestao(ref);
+      if (!o) return;
+      var marcou = s.resp[k], ok = marcou === o.q.c;
       h += '<div class="qz l-' + o.q.levelName + '">' +
            '<div class="qnum">' + (k+1) + ' · TEMA ' + ref[0] + ' · ' + o.q.n + ' · ' + (ok ? '✅ acertou' : '❌ errou') + '</div>' +
            '<div class="qtext">' + o.q.q + '</div>';
@@ -877,6 +964,12 @@ function renderSimulado(){
   }
 
   var ref = s.itens[s.pos], o = simQuestao(ref);
+  if (!o){
+    simClear();
+    simAviso = 'Esta questão não existe mais no material — o simulado foi encerrado.';
+    renderSimulado();
+    return;
+  }
   var respondidas = s.resp.filter(function(r){ return r !== null; }).length;
   h += '<div class="sim-top"><span class="cont">' + (s.pos+1) + ' / ' + s.itens.length + '</span>' +
        '<span class="barra"><i style="width:' + Math.round(100*respondidas/s.itens.length) + '%"></i></span>' +
@@ -1315,8 +1408,8 @@ window.addEventListener('hashchange', route);
   if (m){
     var p = decodeProgress(m[1]);
     if (!p.error){
-      var aviso = p.fpMatch ? '' : '\n\nATENÇÃO: código gerado para outra versão do material.';
-      if (confirm('Importar progresso deste link?\n\n' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz.\nIsto substitui o progresso deste aparelho.' + aviso)) {
+      var aviso = avisoVersao(p);
+      if (confirm('Importar progresso deste link?\n\n' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz.\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) {
         applyProgress(p);
       }
     }

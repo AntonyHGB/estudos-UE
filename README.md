@@ -25,8 +25,8 @@ Na raiz, um `index.html` é o hub que leva à área.
 2. **Mudou algo? Rode `node build-site.mjs`** e commite também o resultado gerado — o CI falha se o arquivo commitado divergir da fonte.
 3. **Nada de material sigiloso no repositório.** `documentos-fontes/` (PDFs, imagens e anotações de aula), `_fontes-extraidas/`, `_quiz-fragmentos/`, `_modelo-referencia/` e notas internas ficam fora do versionamento. O que for publicado no GitHub Pages é só o site.
 4. **Quiz bem desenhado:**
-   - quatro alternativas, com **~10% de diferença de comprimento** entre elas; se a correta ficou longa, corte — o que não cabe pertence à explicação;
-   - a correta **não pode ser sistematicamente a mais longa** (alvo ≤ 45% das questões; com quatro alternativas o acaso é 25%);
+   - quatro alternativas, com **~10% de diferença de comprimento** entre elas; a auditoria avisa acima de 15% e o build falha acima de 30% — se a correta ficou longa, corte; o que não cabe pertence à explicação;
+   - a correta **não pode ser sistematicamente a mais longa** (aviso acima de 35% das questões, o build falha acima de 45%; com quatro alternativas o acaso é 25%) — ser a mais longa de vez em quando não é problema;
    - distratora tem que ser erro plausível — o conceito vizinho, a definição correta de outro termo, a resposta que valeria em outro contexto;
    - **nunca** cite a alternativa por letra na explicação ("a opção B...") — as posições são rotacionadas e o texto passaria a mentir. Cite o conteúdo;
    - sem "todas as anteriores" e sem absolutos ("sempre", "nunca") só nas erradas.
@@ -79,7 +79,7 @@ node balancear-quiz.mjs urgencia-e-emergencia   # rotaciona a posição da corre
 node build-site.mjs           # regenera o site
 ```
 
-`montar-quiz.mjs` valida schema, exige 8 questões por fragmento e recusa enunciados repetidos entre todos os fragmentos. É idempotente e não quebra se `_quiz-fragmentos/` estiver vazia (o `quiz.json` atual é mantido). Os fragmentos **não são versionados**: só o `quiz.json` montado entra no repositório.
+`montar-quiz.mjs` valida o schema de cada fragmento, avisa quando um tema não tem 8 questões e recusa enunciados repetidos entre todos os fragmentos. É idempotente e não quebra se `_quiz-fragmentos/` estiver vazia (o `quiz.json` atual é mantido). Os fragmentos **não são versionados**: só o `quiz.json` montado entra no repositório.
 
 ### Balancear as posições
 
@@ -91,11 +91,25 @@ Escrevendo questão é natural deixar a correta sempre na mesma posição — e 
 
 ### Auditoria automática
 
-Todo `node build-site.mjs` mede e imprime a saúde do quiz (alvo: correta mais longa ≤ 45% e ≤ 35% por letra; o acaso é 25% nas duas métricas). Passando dos alvos, o quiz voltou a ser gabaritável sem saber o assunto.
+Todo `node build-site.mjs` mede e imprime a saúde do quiz. Os limiares:
+
+| Medida | Aviso | Erro (o build falha) |
+|---|---|---|
+| Diferença de comprimento entre a maior e a menor alternativa da questão | > 15% | > 30% |
+| Questões em que a correta é a mais longa | > 35% | > 45% |
+| Frequência da letra da correta (em uma letra) | > 35% | — (rode `node balancear-quiz.mjs`) |
+
+O alvo do projeto é ~10% de diferença de comprimento dentro da questão e, como são quatro alternativas, o acaso é 25%. A correta **não** precisa ser sempre curta nem nunca a mais longa: o que não pode é ela ser a mais longa em quase todas as questões — aí dá para gabaritar sem saber o assunto.
+
+Antes de gerar, o build também valida a integridade do banco: a raiz do `quiz.json` precisa ser um objeto; as chaves precisam ter par exato com os arquivos `NN-*.md` (nos dois sentidos); listas de questões vazias são recusadas; e cada questão precisa seguir o schema (`n`, `q`, quatro alternativas não vazias, `c` de 0 a 3, `e`).
 
 ## Progresso
 
 Marcações e respostas ficam no `localStorage` do navegador — por aparelho. Para levar o progresso de um aparelho a outro, use a tela **📲 Levar progresso** dentro do site.
+
+O link, o código e o backup baixado (`progresso-<área>.json`, no formato `{v, site, code}`) carregam uma **versão do material**: impressão digital do layout (temas e contagens) e hash do conteúdo das questões. Se um tema for reordenado, reescrito ou removido, a importação avisa em vez de colar respostas antigas em questões novas. Respostas de quiz apontando para uma alternativa fora do intervalo da questão são ignoradas com aviso. O arquivo de backup pode ser colado direto no campo de importação — o site extrai o `code` do JSON.
+
+Aberta direto do disco (`file://`), a tela mostra apenas o código, sem link: links de compartilhamento não funcionam nesse modo. Copie o código e cole-o no campo de importação do outro aparelho.
 
 ## Publicar
 
@@ -106,7 +120,7 @@ gh repo create estudos-UE --public --source=. --remote=origin --push
 gh api -X POST repos/:owner/estudos-UE/pages -f 'source[branch]=main' -f 'source[path]=/'
 ```
 
-As páginas trazem `<meta name="robots" content="noindex, nofollow">` — não aparecem em buscadores; o acesso é por link direto.
+As páginas trazem `<meta name="robots" content="noindex, nofollow">` — uma **solicitação** para que os buscadores não indexem as páginas. Isso **não é controle de acesso nem garantia**: o conteúdo continua acessível a quem tem o link, e um buscador pode ignorar a diretiva. Não use o repositório para material que não possa circular.
 
 Depois de qualquer alteração:
 

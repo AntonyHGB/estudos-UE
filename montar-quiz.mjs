@@ -5,7 +5,8 @@
 // Cada arquivo _quiz-fragmentos/NN.json contém um array com as 8 questões de um
 // tema, no mesmo formato do quiz.json (n, q, a[4], c, e). O script:
 //   1. valida o schema de cada questão (nível, enunciado, 4 alternativas, índice
-//      da correta de 0 a 3, explicação) e exige exatamente 8 por fragmento;
+//      da correta de 0 a 3, explicação) e avisa quando um tema vem com uma
+//      contagem diferente de 8 questões;
 //   2. recusa enunciados repetidos entre TODOS os fragmentos (o build também
 //      recusaria);
 //   3. escreve urgencia-e-emergencia/quiz.json com as chaves em ordem numérica.
@@ -31,6 +32,7 @@ const NIVEIS = ['🟢', '🟡', '🔴'];
 const normalizar = (s) => s.toLowerCase().replace(/\*|`|\s+/g, ' ').trim();
 
 const erros = [];
+const avisos = [];
 const banco = {};
 const vistas = new Map();
 
@@ -56,9 +58,12 @@ for (const arquivo of arquivos) {
     erros.push(`${arquivo}: o conteúdo precisa ser um array de questões`);
     continue;
   }
-  if (questoes.length !== POR_TEMA) {
-    erros.push(`${arquivo}: ${questoes.length} questões (esperado exatamente ${POR_TEMA})`);
+  if (!questoes.length) {
+    erros.push(`${arquivo}: o array de questões está vazio`);
     continue;
+  }
+  if (questoes.length !== POR_TEMA) {
+    avisos.push(`${arquivo}: ${questoes.length} questões (o padrão do projeto é ${POR_TEMA} por tema)`);
   }
 
   questoes.forEach((q, i) => {
@@ -84,6 +89,11 @@ if (erros.length) {
   erros.forEach((e) => console.error(`   ${e}`));
   console.error('\n   Nada foi escrito. Corrija os fragmentos e rode de novo.');
   process.exit(1);
+}
+
+if (avisos.length) {
+  console.warn('⚠ Avisos (os fragmentos foram montados mesmo assim):\n');
+  avisos.forEach((a) => console.warn(`   ${a}`));
 }
 
 const ordenado = {};

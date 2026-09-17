@@ -814,18 +814,34 @@ mark{background:var(--accent-soft);color:var(--text);font-weight:700;padding:0 2
 /* ================================ auditoria do quiz ================================ */
 
 // Um quiz só serve para autoavaliação se não der para gabaritar sem saber o
-// assunto. Os dois vazamentos clássicos são a correta ser sempre a alternativa
-// mais longa e a correta cair sempre na mesma letra — os dois são medidos aqui,
-// e o build reclama alto quando passam do alvo.
-const ALVO_MAIS_LONGA = 0.45; // acaso com 4 alternativas = 25%
-const ALVO_POR_LETRA = 0.35; // acaso = 25%
+// assunto. A correta ser sempre a alternativa mais longa e cair sempre na mesma
+// letra são os vazamentos clássicos — medidos aqui. Dentro da questão, o alvo do
+// projeto é ~10% de diferença de comprimento entre a maior e a menor alternativa.
+const DISPERSAO_AVISO = 0.15; // aviso acima disso, por questão
+const DISPERSAO_ERRO = 0.30; // erro (build falha) acima disso
+const MAIS_LONGA_AVISO = 0.35; // % de questões com a correta sendo a mais longa
+const MAIS_LONGA_ERRO = 0.45; // acaso com 4 alternativas = 25%; não se exige "nunca"
+const POR_LETRA_AVISO = 0.35; // concentração da letra da correta; acaso = 25%
 
-function validarQuiz(folder, quizBank){
+function validarQuiz(folder, quizBank, idsMd){
+  if (!quizBank || typeof quizBank !== 'object' || Array.isArray(quizBank))
+    throw new Error(`${folder}: quiz inválido\n  - a raiz do quiz.json precisa ser um objeto { "NN": [questões] }`);
   const erros = [];
   const vistas = new Map();
+  const repetidos = idsMd.filter((id, k) => idsMd.indexOf(id) !== k);
+  if (repetidos.length) erros.push(`mais de um arquivo NN-*.md com o mesmo tema: ${[...new Set(repetidos)].join(', ')}`);
+  const ids = Object.keys(quizBank);
+  const semQuiz = idsMd.filter((id) => !ids.includes(id));
+  const semTema = ids.filter((id) => !idsMd.includes(id));
+  if (semQuiz.length) erros.push(`tema(s) com arquivo NN-*.md sem entrada no quiz.json: ${semQuiz.join(', ')}`);
+  if (semTema.length) erros.push(`entrada(s) no quiz.json sem arquivo NN-*.md: ${semTema.join(', ')}`);
   for (const [tid, questoes] of Object.entries(quizBank)){
     if (!/^\d{2}$/.test(tid) || !Array.isArray(questoes)){
       erros.push(`${tid}: tema ou lista inválida`);
+      continue;
+    }
+    if (!questoes.length){
+      erros.push(`tema ${tid}: lista de questões vazia`);
       continue;
     }
     questoes.forEach((q,i) => {
@@ -848,6 +864,7 @@ function validarQuiz(folder, quizBank){
 function auditarQuiz(folder, quizBank) {
   const semMarcacao = (s) => s.replace(/\*\*/g, '').replace(/`/g, '').replace(/\*/g, '');
   const avisos = [];
+  const erros = [];
   const letras = [0, 0, 0, 0, 0];
   let total = 0;
   let maisLonga = 0;
@@ -871,49 +888,80 @@ function auditarQuiz(folder, quizBank) {
           `${ref}: correta é a maior e passa ${(((correta / mediaOutras) - 1) * 100).toFixed(0)}% da média das outras`
         );
       }
-      if ((maior - menor) / maior > 0.55) {
-        avisos.push(`${ref}: maior alternativa tem ${maior} e menor tem ${menor} caracteres`);
+      const dispersao = (maior - menor) / maior;
+      if (dispersao > DISPERSAO_ERRO) {
+        erros.push(
+          `${ref}: diferença de comprimento entre alternativas de ${(dispersao * 100).toFixed(0)}% ` +
+            `(${menor} a ${maior} caracteres; limite ${(DISPERSAO_ERRO * 100).toFixed(0)}%)`
+        );
+      } else if (dispersao > DISPERSAO_AVISO) {
+        avisos.push(
+          `${ref}: alternativas de ${menor} a ${maior} caracteres ` +
+            `(diferença de ${(dispersao * 100).toFixed(0)}%; aviso acima de ${(DISPERSAO_AVISO * 100).toFixed(0)}%)`
+        );
       }
     });
   }
 
-  if (!total) return;
+  if (!total) return [];
 
   const pctLonga = maisLonga / total;
   const pctLetras = letras.map((n) => n / total);
   const piorLetra = Math.max(...pctLetras);
-  const okLonga = pctLonga <= ALVO_MAIS_LONGA;
-  const okLetra = piorLetra <= ALVO_POR_LETRA;
+  const piorIndice = pctLetras.indexOf(piorLetra);
+
+  if (pctLonga > MAIS_LONGA_ERRO) {
+    erros.push(
+      `correta é a mais longa em ${(pctLonga * 100).toFixed(0)}% das questões ` +
+        `(limite ${(MAIS_LONGA_ERRO * 100).toFixed(0)}%)`
+    );
+  } else if (pctLonga > MAIS_LONGA_AVISO) {
+    avisos.push(
+      `correta é a mais longa em ${(pctLonga * 100).toFixed(0)}% das questões ` +
+        `(aviso acima de ${(MAIS_LONGA_AVISO * 100).toFixed(0)}%)`
+    );
+  }
+  if (piorLetra > POR_LETRA_AVISO) {
+    avisos.push(
+      `distribuição da correta concentrada em ${'ABCDE'[piorIndice]} ${(piorLetra * 100).toFixed(0)}% ` +
+        `(aviso acima de ${(POR_LETRA_AVISO * 100).toFixed(0)}%) — rode "node balancear-quiz.mjs"`
+    );
+  }
 
   const dist = pctLetras
     .slice(0, 4)
     .map((p, k) => `${'ABCD'[k]} ${(p * 100).toFixed(0)}%`)
     .join(' · ');
+  const statusLonga = pctLonga > MAIS_LONGA_ERRO ? '✖' : pctLonga > MAIS_LONGA_AVISO ? '⚠' : '✔';
+  const okLetra = piorLetra <= POR_LETRA_AVISO;
 
   console.log(`  auditoria do quiz (${total} questões)`);
   console.log(
-    `    ${okLonga ? '✔' : '✖'} correta é a mais longa: ${(pctLonga * 100).toFixed(0)}% ` +
-      `(alvo ≤ ${ALVO_MAIS_LONGA * 100}%)`
+    `    ${statusLonga} correta é a mais longa: ${(pctLonga * 100).toFixed(0)}% ` +
+      `(aviso > ${(MAIS_LONGA_AVISO * 100).toFixed(0)}%, erro > ${(MAIS_LONGA_ERRO * 100).toFixed(0)}%)`
   );
   console.log(
-    `    ${okLetra ? '✔' : '✖'} distribuição da correta: ${dist} ` +
-      `(alvo ≤ ${ALVO_POR_LETRA * 100}% por letra)`
+    `    ${okLetra ? '✔' : '⚠'} distribuição da correta: ${dist} ` +
+      `(aviso > ${(POR_LETRA_AVISO * 100).toFixed(0)}% por letra)`
   );
 
   if (avisos.length) {
-    console.log(`    ⚠ ${avisos.length} questão(ões) com alternativa desbalanceada:`);
+    console.log(`    ⚠ ${avisos.length} aviso(s) de balanceamento:`);
     avisos.slice(0, 10).forEach((a) => console.log(`       ${a}`));
     if (avisos.length > 10) console.log(`       ... e mais ${avisos.length - 10}`);
   }
-  if (!okLonga || !okLetra) {
-    console.error(
-      `    ✖ ${folder}: o quiz está gabaritável sem saber o assunto — reescreva as alternativas` +
-        (okLetra ? '' : ' e rode "node balancear-quiz.mjs"')
-    );
+  if (erros.length) {
+    console.error(`    ✖ ${folder}: ${erros.length} erro(s) de balanceamento — reescreva as alternativas:`);
+    erros.slice(0, 10).forEach((e) => console.error(`       ${e}`));
   }
+  return erros;
 }
 
 /* ================================ site principal ================================ */
+
+// Erros de balanceamento das alternativas acumulados entre áreas; se houver
+// algum, o build termina com exit ≠ 0 (a auditoria não pode ser ignorada).
+const errosAuditoria = [];
 
 function buildSite(site) {
   const dir = join(ROOT, site.folder);
@@ -924,8 +972,15 @@ function buildSite(site) {
 
   let quizBank = {};
   const quizPath = join(dir, 'quiz.json');
-  if (existsSync(quizPath)) quizBank = JSON.parse(readFileSync(quizPath, 'utf8'));
-  validarQuiz(site.folder, quizBank);
+  if (existsSync(quizPath)) {
+    try {
+      quizBank = JSON.parse(readFileSync(quizPath, 'utf8'));
+    } catch (e) {
+      throw new Error(`${site.folder}: quiz.json não é JSON válido — ${e.message}`);
+    }
+  }
+  const idsMd = files.map((f) => f.slice(0, 2));
+  validarQuiz(site.folder, quizBank, idsMd);
 
   const topics = files.map((f) => {
     const md = readFileSync(join(dir, f), 'utf8');
@@ -948,10 +1003,16 @@ function buildSite(site) {
   const totalQuestions = topics.reduce((a, t) => a + t.cards.length, 0);
   const totalQuiz = topics.reduce((a, t) => a + t.quiz.length, 0);
 
-  // Impressão digital do layout: se as contagens mudarem, um código de progresso
-  // antigo deixa de bater e o import avisa em vez de bagunçar as marcações.
+  // Impressão digital do material: layout (temas e contagens) e conteúdo das
+  // questões. Contagem igual com questão reescrita ainda muda a impressão, então
+  // um código de progresso antigo deixa de bater e o import avisa em vez de
+  // colar respostas antigas em questões novas.
   const layoutKey = topics.map((t) => `${t.id}:${t.cards.length}:${t.quiz.length}`).join('|');
+  const contentKey = topics
+    .map((t) => `${t.id}:` + t.quiz.map((q) => [q.n, q.q, q.a.join('~'), q.c, q.e].join('~')).join('§'))
+    .join('|');
   const fingerprint = fnv1a(layoutKey) & 0xffff;
+  const contentHash = fnv1a(contentKey) & 0xffff;
 
   const data = {
     siteKey: site.folder,
@@ -959,6 +1020,7 @@ function buildSite(site) {
     short: site.short,
     emoji: site.emoji,
     fp: fingerprint,
+    chash: contentHash,
     topics: topics.map((t) => ({
       id: t.id,
       fullTitle: t.fullTitle,
@@ -1072,8 +1134,9 @@ function unb64url(str){
 function encodeProgress(){
   var bits = [];
   var push = function(val, n){ for (var b = n - 1; b >= 0; b--) bits.push((val >> b) & 1); };
-  push(3, 8);                    // versao do formato (3 = posicoes balanceadas por tema)
-  push(DATA.fp & 0xffff, 16);    // impressao digital do layout
+  push(4, 8);                    // versao do formato (4 = com hash do conteudo)
+  push(DATA.fp & 0xffff, 16);    // impressao digital do layout (temas e contagens)
+  push(DATA.chash & 0xffff, 16); // hash do conteudo das questoes
   DATA.topics.forEach(function(t){
     t.cards.forEach(function(_, i){ push(MARKS.indexOf(getMark(t.id, i)) < 0 ? 0 : MARKS.indexOf(getMark(t.id, i)), 2); });
   });
@@ -1092,24 +1155,58 @@ function decodeProgress(code){
   try { bytes = unb64url(code.trim()); } catch (e) { return { error: 'Código inválido — confira se foi copiado por inteiro.' }; }
   var pos = 0;
   var read = function(n){ var v = 0; for (var k = 0; k < n; k++){ var bit = (bytes[pos >> 3] >> (7 - (pos & 7))) & 1; v = (v << 1) | bit; pos++; } return v; };
-  var need = 24;
-  DATA.topics.forEach(function(t){ need += t.cards.length * 2 + t.quiz.length * 3; });
-  if (bytes.length * 8 < need) return { error: 'Código incompleto para este material.' };
+  var payload = 0;
+  DATA.topics.forEach(function(t){ payload += t.cards.length * 2 + t.quiz.length * 3; });
+  if (bytes.length * 8 < 24) return { error: 'Código incompleto para este material.' };
   var ver = read(8);
-  if (ver !== 3) return { error: 'Código gerado antes de um rebalanceamento do quiz — as respostas não valem mais.' };
+  if (ver !== 3 && ver !== 4) return { error: 'Código de formato antigo ou desconhecido — gere um novo na tela "Levar progresso".' };
+  if (bytes.length * 8 < (ver === 4 ? 40 : 24) + payload) return { error: 'Código incompleto para este material.' };
   var fp = read(16);
-  var marks = [], quiz = [], nMarks = 0, nQuiz = 0;
+  var chash = ver === 4 ? read(16) : null;
+  var marks = [], quiz = [], nMarks = 0, nQuiz = 0, invalidas = 0;
   DATA.topics.forEach(function(t){
     t.cards.forEach(function(_, i){ var v = read(2); marks.push([t.id, i, MARKS[v]]); if (v) nMarks++; });
   });
   DATA.topics.forEach(function(t){
-    t.quiz.forEach(function(_, i){ var v = read(3); quiz.push([t.id, i, v]); if (v) nQuiz++; });
+    t.quiz.forEach(function(q, i){
+      var v = read(3);
+      // Alternativa fora do intervalo da questão: ignora, não aplica.
+      if (v > 0 && v - 1 >= q.a.length){ invalidas++; return; }
+      quiz.push([t.id, i, v]); if (v) nQuiz++;
+    });
   });
-  return { fpMatch: fp === (DATA.fp & 0xffff), marks: marks, quiz: quiz, nMarks: nMarks, nQuiz: nQuiz };
+  return {
+    ver: ver,
+    fpMatch: fp === (DATA.fp & 0xffff),
+    conteudoOk: chash === null ? null : chash === (DATA.chash & 0xffff),
+    marks: marks, quiz: quiz, nMarks: nMarks, nQuiz: nQuiz, invalidas: invalidas
+  };
 }
 function applyProgress(p){
   p.marks.forEach(function(m){ setMark(m[0], m[1], m[2]); });
   p.quiz.forEach(function(q){ if (q[2] > 0) setQuizAns(q[0], q[1], q[2] - 1); else LS.del(SKEY + ':quiz:v3:' + q[0] + ':' + q[1]); });
+}
+function avisoVersao(p){
+  if (p.ver === 3) return '\\n\\nObs.: código no formato antigo — não dá para conferir se o conteúdo das questões mudou desde então.';
+  if (!p.fpMatch) return '\\n\\nATENÇÃO: este código foi gerado para uma versão diferente do material (temas ou quantidades mudaram). As marcações podem ficar trocadas.';
+  if (p.conteudoOk === false) return '\\n\\nATENÇÃO: as questões foram reescritas desde que este código foi gerado. As marcações valem, mas as respostas do quiz podem não corresponder mais.';
+  return '';
+}
+function notaInvalidas(p){
+  return p.invalidas ? '\\n\\n' + p.invalidas + ' resposta(s) com alternativa fora do intervalo serão ignoradas.' : '';
+}
+// Aceita link (?p=...), código puro e o backup em JSON ({v, site, code}).
+function extrairCodigo(raw){
+  var link = raw.match(/[?&]p=([A-Za-z0-9_-]+)/);
+  if (link) return { code: link[1] };
+  var t = raw.trim();
+  if (t.charAt(0) === '{'){
+    var obj;
+    try { obj = JSON.parse(t); } catch (e) { return { error: 'O texto parece um backup (.json), mas está corrompido — baixe de novo e tente importar.' }; }
+    if (!obj || typeof obj.code !== 'string' || !obj.code.trim()) return { error: 'JSON sem o campo "code" — não parece um backup deste material.' };
+    return { code: obj.code.trim(), site: typeof obj.site === 'string' ? obj.site : '' };
+  }
+  return { code: t };
 }
 
 /* ---------- desempenho por nivel ----------
@@ -1375,20 +1472,23 @@ function renderSync(){
     t.cards.forEach(function(_, i){ if (getMark(t.id, i)) marks++; });
     t.quiz.forEach(function(_, i){ if (getQuizAns(t.id, i) !== null) quizzes++; });
   });
-  var base = location.origin + location.pathname;
-  var link = base + '?p=' + code;
+  // Em file:// não existe link funcional entre aparelhos — só o código.
+  var local = location.protocol === 'file:';
+  var link = location.origin + location.pathname + '?p=' + code;
   var h = '<div class="topic-head"><h1>📲 Levar progresso para outro aparelho</h1>' +
           '<p class="sub">Seu progresso fica salvo só neste navegador. Para continuar de onde parou no celular (ou voltar para o PC), use o link ou o código abaixo.</p></div>';
   h += '<div class="sync-box"><h3>1. Exportar deste aparelho</h3>' +
        '<p>Marcações: <strong>' + marks + '</strong> · Respostas de quiz: <strong>' + quizzes + '</strong></p>' +
-       '<p>Abra este link no outro aparelho (mande no WhatsApp para você mesmo, por exemplo):</p>' +
-       '<textarea id="expLink" readonly onclick="this.select()">' + link + '</textarea>' +
-       '<button class="btn" onclick="copyText(document.getElementById(\\'expLink\\').value, this)">📋 Copiar link</button>' +
+       (local
+         ? '<p>Esta cópia foi aberta direto do disco (<code>file://</code>), onde link de compartilhamento não funciona. Copie o código abaixo e cole-o no campo de importar do outro aparelho.</p>'
+         : '<p>Abra este link no outro aparelho (mande no WhatsApp para você mesmo, por exemplo):</p>') +
+       '<textarea id="expLink" readonly onclick="this.select()">' + (local ? code : link) + '</textarea>' +
+       '<button class="btn" onclick="copyText(document.getElementById(\\'expLink\\').value, this)">' + (local ? '📋 Copiar código' : '📋 Copiar link') + '</button>' +
        '<button class="btn ghost" onclick="downloadBackup()">💾 Baixar backup</button>' +
        '<div id="copyNote"></div></div>';
   h += '<div class="sync-box"><h3>2. Importar neste aparelho</h3>' +
-       '<p>Cole aqui um link ou código gerado no outro aparelho:</p>' +
-       '<textarea id="impCode" placeholder="Cole o link ou o código aqui..."></textarea>' +
+       '<p>Cole aqui o link, o código ou o backup baixado no outro aparelho:</p>' +
+       '<textarea id="impCode" placeholder="Cole o link, o código ou o arquivo de backup (.json) aqui..."></textarea>' +
        '<button class="btn" onclick="doImport()">⬇️ Importar progresso</button>' +
        '<div id="impNote"></div></div>';
   h += '<div class="sync-box"><h3>Dica para o celular</h3>' +
@@ -1422,15 +1522,17 @@ function downloadBackup(){
 function doImport(){
   var raw = document.getElementById('impCode').value.trim();
   var note = document.getElementById('impNote');
-  if (!raw){ note.innerHTML = '<div class="note err">Cole o link ou o código primeiro.</div>'; return; }
-  var m = raw.match(/[?&]p=([A-Za-z0-9_-]+)/);
-  var code = m ? m[1] : raw;
-  var p = decodeProgress(code);
+  if (!raw){ note.innerHTML = '<div class="note err">Cole o link, o código ou o backup primeiro.</div>'; return; }
+  var ex = extrairCodigo(raw);
+  if (ex.error){ note.innerHTML = '<div class="note err">' + ex.error + '</div>'; return; }
+  var p = decodeProgress(ex.code);
   if (p.error){ note.innerHTML = '<div class="note err">' + p.error + '</div>'; return; }
-  var aviso = p.fpMatch ? '' : '\\n\\nATENÇÃO: este código foi gerado para uma versão diferente do material. As marcações podem ficar trocadas.';
-  if (!confirm('Importar ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz?\\n\\nIsto substitui o progresso deste aparelho.' + aviso)) return;
+  var aviso = avisoVersao(p);
+  if (ex.site && ex.site !== DATA.siteKey) aviso += '\\n\\nATENÇÃO: este backup é de "' + ex.site + '", não de "' + DATA.siteKey + '".';
+  if (!confirm('Importar ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz?\\n\\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) return;
   applyProgress(p);
-  note.innerHTML = '<div class="note ok">✅ Progresso importado! ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas restauradas.</div>';
+  note.innerHTML = '<div class="note ok">✅ Progresso importado! ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas restauradas.' +
+    (p.invalidas ? ' ' + p.invalidas + ' resposta(s) inválida(s) foram ignoradas.' : '') + '</div>';
   renderSidebar('sync');
 }
 
@@ -1438,7 +1540,25 @@ function doImport(){
    Estudar tema a tema da uma falsa sensacao de dominio, porque o contexto ja
    entrega metade da resposta. Aqui as questoes vem de todos os temas
    misturadas e o gabarito so aparece no fim. */
-function simGet(){ try { return JSON.parse(LS.get(SKEY + ':sim') || 'null'); } catch(e){ return null; } }
+var simAviso = '';
+function simGet(){
+  var s;
+  try { s = JSON.parse(LS.get(SKEY + ':sim') || 'null'); } catch(e){ s = null; }
+  if (!s) return null;
+  if (!Array.isArray(s.itens) || !Array.isArray(s.resp)){
+    simClear();
+    simAviso = 'O simulado salvo estava corrompido e foi descartado.';
+    return null;
+  }
+  // O simulado guarda a versão do material: se questões ou temas mudaram, as
+  // referências antigas não valem mais — descarta em vez de associar errado.
+  if (s.fp !== DATA.fp || s.chash !== DATA.chash){
+    simClear();
+    simAviso = 'O simulado salvo era de uma versão anterior do material e foi descartado — comece outro.';
+    return null;
+  }
+  return s;
+}
 function simSet(s){ LS.set(SKEY + ':sim', JSON.stringify(s)); }
 function simClear(){ LS.del(SKEY + ':sim'); }
 
@@ -1450,7 +1570,8 @@ function simIniciar(n){
     var tmp = todas[k]; todas[k] = todas[j]; todas[j] = tmp;
   }
   var itens = todas.slice(0, Math.min(n, todas.length));
-  simSet({ itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
+  simAviso = '';
+  simSet({ fp: DATA.fp, chash: DATA.chash, itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
   renderSimulado();
 }
 function simEscolher(j){
@@ -1470,7 +1591,9 @@ function simFinalizar(){
   renderSimulado();
 }
 function simQuestao(ref){
+  if (!Array.isArray(ref)) return null;
   var t = DATA.topics.find(function(x){ return x.id === ref[0]; });
+  if (!t || !Number.isInteger(ref[1]) || !t.quiz[ref[1]]) return null;
   return { t: t, q: t.quiz[ref[1]] };
 }
 
@@ -1479,6 +1602,28 @@ function renderSimulado(){
   document.getElementById('tbTitle').textContent = 'Simulado';
   var s = simGet();
   var h = '';
+
+  // Defesa extra: itens que não existem mais são removidos (ou o simulado
+  // inteiro é descartado), com aviso, sem quebrar a tela.
+  if (s){
+    var itens = [], resp = [], removidos = 0;
+    s.itens.forEach(function(ref, k){
+      if (simQuestao(ref)){ itens.push(ref); resp.push(k < s.resp.length ? s.resp[k] : null); }
+      else removidos++;
+    });
+    if (removidos){
+      if (!itens.length){
+        simClear(); s = null;
+        simAviso = 'O simulado salvo apontava para questões que não existem mais e foi descartado.';
+      } else {
+        s.itens = itens; s.resp = resp;
+        s.pos = Math.max(0, Math.min(s.pos, s.itens.length - 1));
+        simSet(s);
+        simAviso = removidos + ' questão(ões) de uma versão anterior do material foram ignoradas.';
+      }
+    }
+  }
+  if (simAviso){ h += '<div class="note err">⚠️ ' + simAviso + '</div>'; simAviso = ''; }
 
   if (!s){
     var totalQ = DATA.topics.reduce(function(a,t){ return a + t.quiz.length; }, 0);
@@ -1503,7 +1648,9 @@ function renderSimulado(){
     var acertos = 0;
     var porTema = {}, porNivel = { '🟢':{ok:0,n:0}, '🟡':{ok:0,n:0}, '🔴':{ok:0,n:0} };
     s.itens.forEach(function(ref, k){
-      var o = simQuestao(ref), ok = s.resp[k] === o.q.c;
+      var o = simQuestao(ref);
+      if (!o) return;
+      var ok = s.resp[k] === o.q.c;
       if (ok) acertos++;
       if (!porTema[ref[0]]) porTema[ref[0]] = { ok:0, n:0, nome:o.t.shortTitle };
       porTema[ref[0]].n++; if (ok) porTema[ref[0]].ok++;
@@ -1541,7 +1688,9 @@ function renderSimulado(){
 
     h += '<h2 style="margin-top:26px">Revisão das questões</h2>';
     s.itens.forEach(function(ref, k){
-      var o = simQuestao(ref), marcou = s.resp[k], ok = marcou === o.q.c;
+      var o = simQuestao(ref);
+      if (!o) return;
+      var marcou = s.resp[k], ok = marcou === o.q.c;
       h += '<div class="qz l-' + o.q.levelName + '">' +
            '<div class="qnum">' + (k+1) + ' · TEMA ' + ref[0] + ' · ' + o.q.n + ' · ' + (ok ? '✅ acertou' : '❌ errou') + '</div>' +
            '<div class="qtext">' + o.q.q + '</div>';
@@ -1557,6 +1706,12 @@ function renderSimulado(){
   }
 
   var ref = s.itens[s.pos], o = simQuestao(ref);
+  if (!o){
+    simClear();
+    simAviso = 'Esta questão não existe mais no material — o simulado foi encerrado.';
+    renderSimulado();
+    return;
+  }
   var respondidas = s.resp.filter(function(r){ return r !== null; }).length;
   h += '<div class="sim-top"><span class="cont">' + (s.pos+1) + ' / ' + s.itens.length + '</span>' +
        '<span class="barra"><i style="width:' + Math.round(100*respondidas/s.itens.length) + '%"></i></span>' +
@@ -1995,8 +2150,8 @@ window.addEventListener('hashchange', route);
   if (m){
     var p = decodeProgress(m[1]);
     if (!p.error){
-      var aviso = p.fpMatch ? '' : '\\n\\nATENÇÃO: código gerado para outra versão do material.';
-      if (confirm('Importar progresso deste link?\\n\\n' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz.\\nIsto substitui o progresso deste aparelho.' + aviso)) {
+      var aviso = avisoVersao(p);
+      if (confirm('Importar progresso deste link?\\n\\n' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz.\\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) {
         applyProgress(p);
       }
     }
@@ -2046,6 +2201,9 @@ if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
   const version = (fnv1a(finalHtml) >>> 0).toString(36);
   const sw = `// Gerado por build-site.mjs — não editar à mão.
 const CACHE = 'estudos-${site.folder}-${version}';
+// Só apaga caches DESTE app (mesmo prefixo). Outros projetos no mesmo domínio
+// (ex.: /estudos) têm os próprios caches e não são tocados.
+const CACHE_PREFIX = 'estudos-${site.folder}-';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon-180.png'];
 
 self.addEventListener('install', (e) => {
@@ -2055,7 +2213,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -2101,7 +2259,7 @@ self.addEventListener('fetch', (e) => {
     if (t.cards.length === 0) console.warn(`  ⚠ tema ${t.id} sem questões abertas`);
     if (t.quiz.length === 0) console.warn(`  ⚠ tema ${t.id} sem quiz`);
   }
-  auditarQuiz(site.folder, quizBank);
+  auditarQuiz(site.folder, quizBank).forEach((e) => errosAuditoria.push(`${site.folder}: ${e}`));
 
   return { totalQuestions, totalQuiz, topics: topics.length };
 }
@@ -2187,4 +2345,11 @@ ${cards}
 
 const stats = SITES.map((s) => buildSite(s));
 buildHub(stats);
+
+if (errosAuditoria.length) {
+  console.error(
+    `\n✖ Auditoria do quiz reprovada — ${errosAuditoria.length} erro(s) de balanceamento das alternativas.`
+  );
+  process.exit(1);
+}
 console.log('\nPronto. Abra index.html na raiz, ou publique a pasta inteira.');
