@@ -52,7 +52,7 @@ Por trás da tabela:
 - **Por que 5 a 6 cm:** mais raso não gera pressão de perfusão; mais fundo aumenta o risco de lesão.
 - **Recuo total:** apoiar-se no tórax impede o retorno venoso e reduz o volume da compressão seguinte.
 - **Pausas:** interrupções de **40 s ou mais ao redor do choque** se associam a menor sobrevida, e mesmo pausas de **4 a 5 s** já derrubam as pressões de perfusão. Toda pausa precisa ter motivo e duração mínima.
-- **Fadiga:** a profundidade começa a cair depois de **cerca de 1 minuto** de compressões, mas o socorrista só **percebe** a fadiga perto de **5 minutos**. Daí a troca programada a cada 2 min, ensaiada para durar ~5 s.
+- **Fadiga:** a profundidade começa a cair depois de **cerca de 1 minuto** de compressões, mas o socorrista só **percebe** a fadiga perto de **5 minutos**. Daí a troca programada a cada 2 min, planejada para não adicionar pausa (meta clássica: uma troca de cerca de 5 s).
 - **Ventilação:** sem via aérea avançada, 30:2 — relação aceita para leigos e profissionais na atualização de 2025. Com via aérea avançada, as compressões não param e a ventilação vira independente: **10/min**. Ventilar demais aumenta a pressão intratorácica e derruba o retorno venoso.
 
 ## 4. Desfibrilação precoce e DEA

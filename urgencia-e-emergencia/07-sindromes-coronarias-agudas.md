@@ -68,7 +68,7 @@ Objetivo comum: melhorar a oferta e reduzir o consumo de oxigênio do miocárdio
 
 - **Sublingual: 0,4 mg a cada 5 min, até 3 doses** — reavaliar dor e sinais vitais a cada dose; se a dor persistir após as 3 doses, considerar **NTG intravenosa**.
 - **IV** é indicada no NSTE-ACS para **isquemia persistente, insuficiência cardíaca ou hipertensão**; no STEMI, pode ser útil quando há hipertensão ou IC.
-- **Contraindicações:** PAS <90 mmHg (ou queda ≥30 mmHg em relação à basal); bradicardia ou taquicardia acentuada; inibidor da fosfodiesterase (**sildenafil nas últimas 24 h, tadalafil nas últimas 48 h**); **suspeita de infarto do ventrículo direito**.
+- **Contraindicações:** PAS <90 mmHg (ou queda ≥30 mmHg em relação à basal); bradicardia ou taquicardia acentuada; inibidor da fosfodiesterase (**avanafil em 12 h, sildenafil em 24 h, tadalafil em 48 h**); **suspeita de infarto do ventrículo direito**.
 - Efeitos adversos comuns: cefaleia, rubor, taquicardia, tontura e hipotensão ortostática. A hipotensão costuma responder ao decúbito e a volume.
 - Macete de prova: IAM inferior que fica hipotenso após nitrato — pense em RVI.
 
@@ -131,7 +131,7 @@ Objetivo comum: melhorar a oferta e reduzir o consumo de oxigênio do miocárdio
 ## 7. Infarto do ventrículo direito (RVI)
 
 - Suspeitar sempre que houver **supra em II, III e/ou aVF** (parede inferior): cerca de **um terço** dos STEMI inferiores tem algum envolvimento do ventrículo direito, quase sempre por oclusão da coronária direita.
-- ECG: os sinais mais sensíveis são **supra de 1 mm em V1 e em V4R** (derivações torácicas direitas).
+- ECG: o sinal mais sensível é o **supra de ≥ 1 mm em V4R** (derivação torácica direita); **V1** pode acompanhar.
 - Tríade hemodinâmica clássica: **hipotensão + turgência jugular + pulmões limpos**.
 - **O VD é uma câmara dependente de volume**: nitratos e diuréticos reduzem a pré-carga e precipitam hipotensão. Suspeitar de RVI quando um IAM inferior fica hipotenso após nitrato.
 - Conduta: **suspender o nitrato, evitar diuréticos e manter a pré-carga** (reposição de volume conforme necessidade).
@@ -179,7 +179,7 @@ A **Fifth Universal Definition of Myocardial Infarction (2026)**, da ESC/ACC/AHA
 
 **🟡 Qual é o esquema da nitroglicerina sublingual e quais contraindicações precisam ser checadas antes de administrá-la?**
 
-**Resposta modelo:** **0,4 mg sublingual a cada 5 minutos, até 3 doses**, reavaliando dor e sinais vitais a cada administração. Se a dor persistir após as três doses, considerar NTG intravenosa — indicada no NSTE-ACS para isquemia persistente, insuficiência cardíaca ou hipertensão, e útil no STEMI com hipertensão ou IC. Contraindicações: **PAS <90 mmHg ou queda ≥30 mmHg** em relação à basal, bradicardia ou taquicardia acentuada, uso de inibidor da fosfodiesterase (**sildenafil em 24 h; tadalafil em 48 h**) e **suspeita de infarto do ventrículo direito**. Efeitos adversos comuns incluem cefaleia, rubor, taquicardia, tontura e hipotensão ortostática.
+**Resposta modelo:** **0,4 mg sublingual a cada 5 minutos, até 3 doses**, reavaliando dor e sinais vitais a cada administração. Se a dor persistir após as três doses, considerar NTG intravenosa — indicada no NSTE-ACS para isquemia persistente, insuficiência cardíaca ou hipertensão, e útil no STEMI com hipertensão ou IC. Contraindicações: **PAS <90 mmHg ou queda ≥30 mmHg** em relação à basal, bradicardia ou taquicardia acentuada, uso de inibidor da fosfodiesterase (**avanafil em 12 h, sildenafil em 24 h, tadalafil em 48 h**) e **suspeita de infarto do ventrículo direito**. Efeitos adversos comuns incluem cefaleia, rubor, taquicardia, tontura e hipotensão ortostática.
 
 **🟡 Além do nitrato, quais são as medidas farmacológicas iniciais no paciente com SCA? Inclua o antiplaquetário, a analgesia e a classe formalmente contraindicada.**
 
@@ -195,7 +195,7 @@ A **Fifth Universal Definition of Myocardial Infarction (2026)**, da ESC/ACC/AHA
 
 **🔴 Homem de 62 anos com STEMI inferior recebe nitroglicerina sublingual e evolui com PA 82/50 mmHg, turgência jugular e pulmões limpos. O que está acontecendo e como conduzir?**
 
-**Resposta modelo:** O quadro sugere **infarto do ventrículo direito**, que complica cerca de **um terço** dos STEMI inferiores e deve ser suspeitado sempre que houver supra em II, III e/ou aVF. O VD é uma câmara **dependente de volume**: a nitroglicerina reduz a pré-carga e precipita a hipotensão — o mesmo vale para diuréticos. A conduta é **suspender o nitrato, evitar diuréticos e manter a pré-carga** (reposição de volume conforme necessidade), lembrando que bradiarritmias podem agravar o quadro e que a estimulação temporária é frequentemente necessária. Os sinais eletrocardiográficos mais sensíveis são o supra de **1 mm em V1 e em V4R**.
+**Resposta modelo:** O quadro sugere **infarto do ventrículo direito**, que complica cerca de **um terço** dos STEMI inferiores e deve ser suspeitado sempre que houver supra em II, III e/ou aVF. O VD é uma câmara **dependente de volume**: a nitroglicerina reduz a pré-carga e precipita a hipotensão — o mesmo vale para diuréticos. A conduta é **suspender o nitrato, evitar diuréticos e manter a pré-carga** (reposição de volume conforme necessidade), lembrando que bradiarritmias podem agravar o quadro e que a estimulação temporária é frequentemente necessária. O sinal eletrocardiográfico mais sensível é o supra de **≥ 1 mm em V4R**; **V1** pode acompanhar.
 
 **🔴 Paciente com STEMI faz fibrinólise, mas mantém dor isquêmica e supradesnivelamento de ST sem melhora. Como reconhecer a falha e qual é a conduta? Quais sinais indicariam sucesso da reperfusão?**
 
