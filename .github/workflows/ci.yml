@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build do site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # build-site.mjs é Node puro, sem dependências.
+      - run: node build-site.mjs
+      # Falha se os arquivos gerados commitados estiverem diferentes da fonte.
+      # Os PNGs são recomprimidos pelo zlib embutido no Node e mudam de bytes
+      # entre versões (ex.: 22.23.1 x 22.23.2) sem mudar o desenho; por isso a
+      # comparação os exclui e cobre HTML, JS e manifest.
+      - name: Verificar drift dos arquivos gerados
+        run: git diff --exit-code -- . ':(exclude)*.png'

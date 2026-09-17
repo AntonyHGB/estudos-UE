@@ -1,0 +1,20 @@
+# Fontes e notas internas — NUNCA entram no repositório
+documentos-fontes/
+_fontes-extraidas/
+_quiz-fragmentos/
+_modelo-referencia/
+.ref-tmp/
+
+# Sistema
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Node (caso algum dia entre dependência aqui)
+node_modules/
+
+# Arquivos temporários de teste
+__*
+
+# Claude Code — configurações locais
+.claude/
