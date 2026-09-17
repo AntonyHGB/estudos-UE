@@ -1,7 +1,5 @@
 # Urgência e Emergência — Material de Estudo
 
-> ⚠️ **Em construção.** O tema 00 é um modelo temporário com questões marcadas `[TEMP]`. O material real será escrito a partir das fontes da disciplina e substituirá o modelo.
-
 Material de estudo de Urgência e Emergência (5º ano de medicina), no formato do site: resumos conceituais, quiz de múltipla escolha com correção imediata e questões abertas com autoavaliação.
 
 ---
