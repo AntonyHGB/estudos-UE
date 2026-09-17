@@ -8,7 +8,7 @@
 
 - **Principais causas** de emergência neurológica: **AVC, TCE, convulsões, infecções do SNC e tumores cerebrais**.
 - Emergência neurológica exige atendimento **rápido, preciso e eficiente**: estabilizar e encaminhar para tratamento especializado. Nas infecções, o prognóstico depende de **diagnóstico imediato + antibioticoterapia empírica precoce**.
-- **Avaliação primária — cuidado com a sigla:** o material da disciplina escreve **XABC** ("Airway, Breathing, Circulation"). Outras fontes do projeto (AVCi, ACLS) usam **ABCDE** — registre a variante da aula sem tratá-la como sigla universal.
+- **Avaliação primária — cuidado com a sigla:** o material da disciplina escreve **XABC** ("Airway, Breathing, Circulation"). Nos demais temas, a avaliação primária aparece como **ABCDE** — registre a variante da aula sem tratá-la como sigla universal.
 - Em seguida, **avaliação neurológica inicial**: déficits motores, sensitivos e alterações do estado mental.
 - **Meningite é doença de notificação compulsória** (em **24 h**; surtos e óbitos, de notificação imediata).
 
@@ -41,19 +41,19 @@
 - **Bacterioscopia pela coloração de Gram** em **sangue, lesões cutâneas e, principalmente, líquor**.
 - **Cultura de sangue antes do antibiótico** — regra que não pode ser perdida.
 - **Se o paciente já está em antibiótico:** **pesquisa de polissacarídeos capsulares no líquor** ou **testes biomoleculares (PCR)**.
-- ❓ O material não traz a bioquímica do líquor (celularidade, proteína, glicose, pressão de abertura) nem outras etiologias — este tema é centrado na meningocócica.
+- A bioquímica do líquor (celularidade, proteína, glicose, pressão de abertura) e outras etiologias não são detalhadas aqui — este tema é centrado na forma meningocócica.
 
 ### 2.5 Tratamento
 
 | Situação | Esquema |
 |---|---|
-| **Adulto — doença meningocócica** | **Ceftriaxona 2 g IV de 12/12 h**, por **5 a 7 dias** |
+| **Adulto — doença meningocócica** | **Ceftriaxona 2 g IV de 12/12 h**, por **7 dias** |
 | **Criança >2 meses — empírico** | **Ceftriaxona ou cefotaxima** |
 | **Criança — confirmada** | **Penicilina, ampicilina ou ceftriaxona** |
 
-- ⚠️ **"Penicilina G por 7 dias" não é a redação vigente**: os documentos consultados trazem **5–7 dias** para os esquemas (na tabela de adultos, **7 dias** para a ceftriaxona; a OMS cita **5 dias** em contexto de epidemia).
+- **Duração do tratamento:** no adulto, a ceftriaxona fica por **7 dias**; a faixa de **5–7 dias** aparece nos esquemas pediátricos (penicilina, ampicilina ou ceftriaxona) — e a OMS cita **5 dias** em contexto de epidemia.
 - **Resistência à penicilina:** **cloranfenicol ou meropenem** (material da disciplina).
-- **Corticoide e pressão intracraniana:** o material associa **corticoide** e tratamento do **aumento da pressão intracraniana** — sem dose ou esquema detalhados na fonte ❓.
+- **Corticoide e pressão intracraniana:** o material associa **corticoide** e tratamento do **aumento da pressão intracraniana** — sem dose ou esquema detalhados no material da disciplina.
 
 ### 2.6 Quimioprofilaxia — contatos e o próprio doente
 
@@ -66,8 +66,8 @@
 | **Ciprofloxacino** | **500 mg VO, dose única** | alternativa (**≥18 anos**) |
 
 - 🔥 **O próprio doente também faz quimioprofilaxia na alta** (para erradicar o estado de portador) — **exceto** se foi tratado com **ceftriaxona ou cefotaxima**, que já erradicam a colonização.
-- ⚠️ **Não confundir com *H. influenzae* tipo b:** rifampicina **600 mg de 24/24 h por 4 dias** — outro esquema.
-- 🔥 **Profilaxia ≠ tratamento:** **2 dias** de rifampicina no contato; **5–7 dias** de ceftriaxona no doente.
+- **Não confundir com *H. influenzae* tipo b:** rifampicina **600 mg de 24/24 h por 4 dias** — outro esquema.
+- 🔥 **Profilaxia ≠ tratamento:** **2 dias** de rifampicina no contato; **7 dias** de ceftriaxona no adulto (**5–7 dias** nos esquemas pediátricos).
 
 ### 2.7 Prevenção
 
@@ -96,7 +96,7 @@
 
 - Soma: **3 a 15**. **3** = sem resposta nos três componentes; **15** = orientado e obedecendo a comandos.
 - Exemplo: abre os olhos **ao chamado (3)** + **confuso (4)** + **localiza a dor (5)** = **12 pontos**.
-- ⚠️ Glasgow mede **nível de consciência** — não é o NIHSS (gravidade de déficit no AVC, tema 08). O material não traz a correlação com conduta ❓.
+- Glasgow mede **nível de consciência** — não é o NIHSS (gravidade de déficit no AVC, tema 08). O material da disciplina não traz a correlação com conduta.
 
 ## 5. Escala de Cincinnati
 
@@ -105,7 +105,7 @@
   - **face:** desvio de rima / queda facial;
   - **braços:** um braço não mexe ou tem menos força que o outro;
   - **fala:** mistura de palavras, palavras incompreensíveis.
-- ⚠️ No material, a escala é **qualitativa, sem pontuação** — serve para reconhecer e acelerar, e **não substitui** a avaliação de gravidade (NIHSS).
+- **A escala, como apresentada, é qualitativa, sem pontuação** — serve para reconhecer e acelerar, e **não substitui** a avaliação de gravidade (NIHSS).
 
 ## 6. Convulsões na emergência
 
@@ -113,7 +113,7 @@
 - Causas citadas: **epilepsia**, **febre alta em crianças (convulsão febril)**, distúrbios metabólicos, infecções cerebrais, tumores cerebrais e **trauma**.
 - Durante a crise: movimentos involuntários, perda de consciência e alterações do estado mental.
 - Manejo da convulsão aguda: **proteção das vias aéreas** + **anticonvulsivantes — diazepam e fenitoína**; em seguida, **investigar a causa** e decidir sobre **antiepiléptico contínuo**.
-- ❓ O material **não traz doses** de diazepam/fenitoína nem protocolo de **estado de mal epiléptico** (definição, duração, segunda linha). O que não está na fonte não deve ser inventado aqui.
+- O material da disciplina **não traz doses** de diazepam/fenitoína nem protocolo de **estado de mal epiléptico** (definição, duração, segunda linha); para esses pontos, consulte uma fonte específica.
 
 ## 7. AVC e hemorragias — introdução
 
@@ -133,14 +133,14 @@
 
 - **TC de crânio** é o exame **mais utilizado** e o primeiro passo: mostra **hemorragia**. No AVCi, a **TC costuma ser normal na fase aguda** — o diagnóstico é por **exclusão de AVCH**; a **ACM hiperdensa** pode ser sinal precoce.
 - **RM é mais sensível que a TC**, sobretudo nas **fases mais precoces**.
-- **Suspeita de HSA com TC sem sangramento → colher líquor.** O material cita **xantocromia**, **queda da contagem de hemácias do 1º para o 4º tubo** e **pressão de abertura elevada** ❓ (interpretação a conferir na fonte). O manejo de HSA/HIP (drogas, escalas, cirurgia) **não** está detalhado na fonte e não é desenvolvido aqui.
+- **Suspeita de HSA com TC sem sangramento → colher líquor.** O material da disciplina cita **xantocromia**, **queda da contagem de hemácias do 1º para o 4º tubo** e **pressão de abertura elevada**. O manejo de HSA/HIP (drogas, escalas, cirurgia) **não** é detalhado aqui.
 - **Hidrocefalia aguda:** acúmulo rápido de líquor → **↑ pressão intracraniana**; pode exigir **derivação ventricular urgente** ou cirurgia.
 
 ## 8. Pegadinhas que mais custam ponto
 
 - Exantema viral **some** à digitopressão; mancha da **meningococcemia não some** e pode ter **centro necrótico**.
-- **Profilaxia ≠ tratamento:** rifampicina **2 dias** (contato) vs. ceftriaxona **5–7 dias** (doente).
-- **"Penicilina G por 7 dias"** não é a redação vigente para a meningite.
+- **Profilaxia ≠ tratamento:** rifampicina **2 dias** (contato) vs. ceftriaxona **7 dias** (doente, adulto).
+- **Duração no adulto: ceftriaxona por 7 dias** — a faixa de 5–7 dias é dos esquemas pediátricos.
 - ***H. influenzae* tipo b** tem esquema próprio: rifampicina **24/24 h por 4 dias**.
 - **XABC** é a sigla do material da disciplina — não misture com **ABCDE** sem explicar.
 - **TC normal precoce** não exclui AVCi nem HSA.
@@ -162,7 +162,7 @@
 
 **🟡 Como manejar uma convulsão aguda e o que fazer depois da crise?**
 
-**Resposta modelo:** Durante a crise, **proteger as vias aéreas** e usar **anticonvulsivantes — diazepam e fenitoína**. Depois, **investigar a causa** (epilepsia, convulsão febril em crianças, distúrbios metabólicos, infecções cerebrais, tumores, trauma) e decidir sobre **tratamento contínuo com antiepilépticos**. O material de referência não traz doses nem protocolo de estado de mal epiléptico.
+**Resposta modelo:** Durante a crise, **proteger as vias aéreas** e usar **anticonvulsivantes — diazepam e fenitoína**. Depois, **investigar a causa** (epilepsia, convulsão febril em crianças, distúrbios metabólicos, infecções cerebrais, tumores, trauma) e decidir sobre **tratamento contínuo com antiepilépticos**. O material da disciplina não traz doses nem protocolo de estado de mal epiléptico.
 
 **🟡 Descreva a quimioprofilaxia da doença meningocócica para os contatos e para o próprio doente.**
 
@@ -170,7 +170,7 @@
 
 **🔴 Como o quadro clínico separa HSA de HIP? O que fazer quando a TC de crânio não mostra sangramento em uma suspeita de HSA?**
 
-**Resposta modelo:** **HSA:** **cefaleia súbita, intensa e holocraniana**, náuseas, vômitos, tonturas e **sinais de irritação meníngea**. **HIP:** **déficit focal súbito**, cefaleia, náuseas/vômitos, **redução do nível de consciência**, **pressão muito elevada** e, às vezes, convulsão. A **TC de crânio** é o exame mais utilizado e responde primeiro por sangue; se a suspeita de HSA persiste sem sangramento na TC, **colher líquor** — o material cita **xantocromia**, **queda da contagem de hemácias do 1º para o 4º tubo** e **pressão de abertura elevada** ❓. O manejo específico de HSA/HIP não é detalhado na fonte.
+**Resposta modelo:** **HSA:** **cefaleia súbita, intensa e holocraniana**, náuseas, vômitos, tonturas e **sinais de irritação meníngea**. **HIP:** **déficit focal súbito**, cefaleia, náuseas/vômitos, **redução do nível de consciência**, **pressão muito elevada** e, às vezes, convulsão. A **TC de crânio** é o exame mais utilizado e responde primeiro por sangue; se a suspeita de HSA persiste sem sangramento na TC, **colher líquor** — o material da disciplina cita **xantocromia**, **queda da contagem de hemácias do 1º para o 4º tubo** e **pressão de abertura elevada**. O manejo específico de HSA/HIP não é detalhado no material.
 
 **🔴 Lactente com febre alta, manchas que não desaparecem à digitopressão e fontanela tensa e abaulada: qual a suspeita e quais as prioridades?**
 

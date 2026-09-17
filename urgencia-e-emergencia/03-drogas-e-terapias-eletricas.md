@@ -1,4 +1,4 @@
-# 03 — Drogas e Terapias Elétricas de Emergência
+# 03 — Drogas e terapias elétricas de emergência
 
 > Desfibrilação, cardioversão sincronizada e marcapasso transcutâneo; e as drogas de emergência com dose, via e indicação. O tema é técnica: **quanto, por onde e como**.
 
@@ -49,7 +49,7 @@ A cardioversão dispara o choque **cronometrado no QRS**, para não incidir no *
 | TV monomórfica | **100 J** |
 | TV polimórfica | **choque não sincronizado de alta energia** |
 
-⚠️ **O que não se sincroniza:** ritmos desorganizados (**TV polimórfica**) e ritmos **sem pulso** (**FV/TV sem pulso**) — nesses, choque **não sincronizado**. Em 2025, a energia inicial da FA subiu para **≥ 200 J**: os valores baixos herdados da prática antiga ficaram para trás.
+**O que não se sincroniza:** ritmos desorganizados (**TV polimórfica**) e ritmos **sem pulso** (**FV/TV sem pulso**) — nesses, choque **não sincronizado**. Em 2025, a energia inicial da FA subiu para **≥ 200 J**: os valores baixos herdados da prática antiga ficaram para trás.
 
 **Técnica e cuidados:**
 
@@ -86,7 +86,7 @@ A cardioversão dispara o choque **cronometrado no QRS**, para não incidir no *
 4. Aplicar o choque.
 5. **Retomar a RCP imediatamente** — sem pausa para checar pulso. Se apareceu ritmo organizado, então checar pulso; sem pulso = AESP; dúvida = reiniciar RCP.
 
-⚠️ **Pausa peri-choque longa custa sobrevida:** pausas ≥ **40 s** estão associadas a menos sobrevida; mesmo **4–5 s** já derrubam as pressões de perfusão.
+**Pausa peri-choque longa custa sobrevida:** pausas ≥ **40 s** estão associadas a menos sobrevida; mesmo **4–5 s** já derrubam as pressões de perfusão.
 
 ## 2. Drogas de emergência
 
@@ -167,7 +167,7 @@ A cardioversão dispara o choque **cronometrado no QRS**, para não incidir no *
 | Epinefrina | **1 mg a cada 3–5 min**; infusão **2–10 mcg/min** |
 | Norepinefrina / dopamina | **0,1–0,5** / **5–20 mcg/kg/min** |
 
-## 4. Perguntas e casos
+## 4. Perguntas
 
 Responda em voz alta antes de revelar. As respostas trazem o essencial: números, sequência e as armadilhas de cada intervenção.
 

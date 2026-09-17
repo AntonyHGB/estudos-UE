@@ -38,8 +38,8 @@ Sinais e sintomas moderados a graves que definem instabilidade: estado mental ag
 
 - Paciente **com pulso + sinais de instabilidade** → interromper a taquicardia com **cardioversão sincronizada**: o choque é disparado durante o QRS, evitando o período vulnerável da onda T, que poderia desencadear fibrilação ventricular.
 - **Sedação se o tempo e as condições permitirem** — ela nunca atrasa o choque de quem está degradando. Na TV polimórfica, avaliar o estado mental ao considerar a sedação, porque o choque não pode esperar.
-- Energias usuais em bifásico (seguir o fabricante; o texto do manual cita ~100 J para TV instável):
-  - Fibrilação atrial: **200 J**
+- Energias usuais em bifásico (seguir o fabricante; ~100 J para TV instável):
+  - Fibrilação atrial: **≥ 200 J**
   - Flutter atrial: **200 J**
   - Taquicardia de QRS estreito: **100 J**
   - TV monomórfica: **100 J**
@@ -113,7 +113,7 @@ Sinais e sintomas moderados a graves que definem instabilidade: estado mental ag
 | Amiodarona / sotalol | TV monomórfica estável (primeira linha); amiodarona também nas recorrências de polimórfica sem QT longo |
 | Lidocaína | TV monomórfica: **segunda linha**; recorrências de polimórfica sem QT longo |
 | Magnésio | Torsades de pointes/QT longo; **não** de rotina com QT normal |
-| Energias | FA/flutter **200 J**; QRS estreito **100 J**; TV monomórfica **100 J**; polimórfica = não sincronizado, alta energia |
+| Energias | FA **≥200 J**; flutter **200 J**; QRS estreito **100 J**; TV monomórfica **100 J**; polimórfica = não sincronizado, alta energia |
 
 ---
 
@@ -125,7 +125,7 @@ Sinais e sintomas moderados a graves que definem instabilidade: estado mental ag
 
 **🟢 Qual é a diferença prática entre cardioversão sincronizada e desfibrilação?**
 
-**Resposta modelo:** A **cardioversão sincronizada** é para o paciente **com pulso e instável**, quando existe QRS identificável para o aparelho sincronizar o choque (TV monomórfica, FA/flutter, algumas taquicardias de QRS estreito) — o choque cai durante o QRS, fora do período vulnerável da onda T. A **desfibrilação** é para **sem pulso** (FV/TV sem pulso) ou quando o QRS não é sincronizável, como na **TV polimórfica**: choque não sincronizado de alta energia. Energias usuais em bifásico: **200 J** para FA e flutter, **100 J** para TV monomórfica e taquicardia estreita.
+**Resposta modelo:** A **cardioversão sincronizada** é para o paciente **com pulso e instável**, quando existe QRS identificável para o aparelho sincronizar o choque (TV monomórfica, FA/flutter, algumas taquicardias de QRS estreito) — o choque cai durante o QRS, fora do período vulnerável da onda T. A **desfibrilação** é para **sem pulso** (FV/TV sem pulso) ou quando o QRS não é sincronizável, como na **TV polimórfica**: choque não sincronizado de alta energia. Energias usuais em bifásico: **≥200 J** para FA, **200 J** para flutter, **100 J** para TV monomórfica e taquicardia estreita.
 
 **🟡 Qual é o esquema correto da adenosina e quando a dose deve ser reduzida à metade?**
 
@@ -137,7 +137,7 @@ Sinais e sintomas moderados a graves que definem instabilidade: estado mental ag
 
 **🟡 Fibrilação atrial com duração maior que 48 horas (ou desconhecida), paciente estável, programada cardioversão eletiva. O que a duração exige?**
 
-**Resposta modelo:** **Anticoagulação antes da cardioversão** e manutenção da anticoagulação por **pelo menos 4 semanas** depois, pelo risco de tromboembolismo com o retorno do ritmo. Estar estável não dispensa essa etapa: sem anticoagulação, a estratégia inicial tende a ser controle de frequência, e a decisão de ritmo passa pela avaliação do CHA2DS2-VASc. Manobras vagais não convertem FA; a cardioversão, quando indicada, usa **200 J** em bifásico.
+**Resposta modelo:** **Anticoagulação antes da cardioversão** e manutenção da anticoagulação por **pelo menos 4 semanas** depois, pelo risco de tromboembolismo com o retorno do ritmo. Estar estável não dispensa essa etapa: sem anticoagulação, a estratégia inicial tende a ser controle de frequência, e a decisão de ritmo passa pela avaliação do CHA2DS2-VASc. Manobras vagais não convertem FA; a cardioversão, quando indicada, usa **≥200 J** em bifásico.
 
 **🔴 Caso de TV monomórfica sustentada, QRS largo e regular, paciente estável, com acesso venoso. Como conduzir e qual fármaco não pode ser usado?**
 

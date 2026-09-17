@@ -25,7 +25,7 @@ O **RCE** (retorno da circulação espontânea) não encerra o problema: inaugur
 | Temperatura | Estratégia protocolizada **32–37,5 °C** por **≥ 36 h** em quem não responde a comandos; evitar febre |
 | Glicemia | **150–180 mg/dL** (evitar < 70 e > 180) |
 
-⚠️ Onde o livro e a diretriz divergem, valem os números da correção de auditoria (17/09/2026, alinhada à AHA 2025): oxigenação em **90–98%** (não 92–98%) e temperatura em **32–37,5 °C por ≥ 36 h** (não 32–36 °C por ≥ 24 h). É a versão usada neste tema.
+A diretriz de 2025 atualiza dois números em relação ao material didático: oxigenação em **90–98%** (não 92–98%) e temperatura em **32–37,5 °C por ≥ 36 h** (não 32–36 °C por ≥ 24 h). É a versão usada neste tema.
 
 ## 2. Oxigenação e ventilação
 
@@ -57,8 +57,8 @@ O **RCE** (retorno da circulação espontânea) não encerra o problema: inaugur
 
 ## 5. Controle direcionado de temperatura
 
-- **Quem:** quem **não responde a comandos** após o RCE — no livro, OHCA com qualquer ritmo inicial e PCIH com ritmo chocável.
-- **Meta (⚠️ AHA 2025, Parte 11):** estratégia deliberada e protocolizada entre **32 °C e 37,5 °C**, mantida por **≥ 36 h**. Duas faixas válidas: **hipotermia 32–34 °C** ou **normotermia com prevenção de febre 36–37,5 °C**. O livro didático trazia 32–36 °C por ≥ 24 h — vale a versão corrigida.
+- **Quem:** quem **não responde a comandos** após o RCE — na formulação clássica, OHCA com qualquer ritmo inicial e PCIH com ritmo chocável.
+- **Meta (AHA 2025):** estratégia deliberada e protocolizada entre **32 °C e 37,5 °C**, mantida por **≥ 36 h**. Duas faixas válidas: **hipotermia 32–34 °C** ou **normotermia com prevenção de febre 36–37,5 °C**. Materiais mais antigos indicavam 32–36 °C por ≥ 24 h — vale a versão atual.
 - **Evitar febre** em todos; **resfriamento pré-hospitalar de rotina não é recomendado**.
 - Em paralelo: cuidado intensivo, **EEG**, investigação etiológica (angiografia quando apropriada) e preparação do **prognóstico multimodal**.
 
@@ -68,7 +68,7 @@ O **RCE** (retorno da circulação espontânea) não encerra o problema: inaugur
 - **Convulsões devem ser tratadas** — opções citadas: **valproato, levetiracetam, fosfenitoína, propofol, midazolam**.
 - **EEG contínuo ou intermitente** em quem não responde a comandos; é o EEG que dá sentido à mioclonia.
 - **Mioclonia sem correlato no EEG: tratamento não recomendado** (AHA 2025 — o risco de efeitos colaterais supera o benefício desconhecido).
-- **Imagem:** TC de crânio (livro); a AHA 2025 considera **TC de cabeça até a pelve** aceitável após o RCE (novo) e cita **ultrassom/eco à beira do leito** (novo). Na sequência de cuidados intensivos, a diretriz cita **considerar antibióticos**.
+- **Imagem:** TC de crânio (conduta clássica); a AHA 2025 considera **TC de cabeça até a pelve** aceitável após o RCE (novo) e cita **ultrassom/eco à beira do leito** (novo). Na sequência de cuidados intensivos, a diretriz cita **considerar antibióticos**.
 
 ## 7. Prognóstico multimodal
 
@@ -98,7 +98,7 @@ Revisar causas reversíveis não é só tarefa de RCP: a **causa precipitante pe
 | **Hipo/hipercalemia** | hipocalemia: reposição de potássio; hipercalemia: cálcio e/ou bicarbonato IV, insulina IV com glicose, beta-agonistas, hemodiálise |
 | **Hipotermia** | reaquecimento guiado pela temperatura central; na PCR por hipotermia, considerar reaquecimento com ECLS (escores HOPE e ICE); **< 28 °C sem PCR** pode ser aceitável reaquecer com ECLS (AHA 2025) |
 
-⚠️ Na hipercalemia, a AHA 2025 ressalva que a **eficácia do cálcio IV não está bem estabelecida**: usar com cautela, sem desviar das intervenções que salvam (RCP de qualidade, desfibrilação, epinefrina).
+Na hipercalemia, a AHA 2025 ressalva que a **eficácia do cálcio IV não está bem estabelecida**: usar com cautela, sem desviar das intervenções que salvam (RCP de qualidade, desfibrilação, epinefrina).
 
 ### 9.2 Os 5 T
 
@@ -147,7 +147,7 @@ Revisar causas reversíveis não é só tarefa de RCP: a **causa precipitante pe
 
 **🟡 Quem entra no controle direcionado de temperatura, com qual meta, por quanto tempo — e o que a febre exige?**
 
-**Resposta modelo:** Quem **não responde a comandos** após o RCE (no livro, OHCA com qualquer ritmo inicial e PCIH com ritmo chocável). Estratégia deliberada e protocolizada com meta entre **32 °C e 37,5 °C**, mantida por **≥ 36 h**: **hipotermia 32–34 °C** ou **normotermia com prevenção de febre 36–37,5 °C**. **Evitar febre** em todos; **resfriamento pré-hospitalar de rotina não é recomendado**. ⚠️ O livro traz 32–36 °C por ≥ 24 h — vale a versão corrigida pela AHA 2025.
+**Resposta modelo:** Quem **não responde a comandos** após o RCE (na formulação clássica, OHCA com qualquer ritmo inicial e PCIH com ritmo chocável). Estratégia deliberada e protocolizada com meta entre **32 °C e 37,5 °C**, mantida por **≥ 36 h**: **hipotermia 32–34 °C** ou **normotermia com prevenção de febre 36–37,5 °C**. **Evitar febre** em todos; **resfriamento pré-hospitalar de rotina não é recomendado**. Materiais mais antigos indicavam 32–36 °C por ≥ 24 h — vale a versão atual (AHA 2025).
 
 **🟡 No pós-RCE, quando estão indicados o ECG e a angiografia coronária — inclusive no paciente comatoso sem STE?**
 

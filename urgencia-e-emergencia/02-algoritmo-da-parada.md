@@ -18,7 +18,7 @@ O algoritmo começa pelo monitor: o ritmo define a via inteira. São quatro, e a
 | **AESP** | atividade elétrica organizada no monitor, sem pulso central palpável | Não |
 
 - A assistolia pode ser **transitória** — após o término de uma taquicardia, de uma desfibrilação ou de uma cardioversão. Antes de aceitá-la como definitiva, vale confirmar em mais de uma derivação e checar cabos e ganho.
-- **Pseudo-PEA:** AESP em que existe atividade mecânica, fraca demais para gerar pulso palpável — estimativas citam **42–86%** das PEA. Sinais indiretos: **POCUS**, linha arterial, ETCO₂ relativamente alto, Doppler. O prognóstico é **melhor** que o da AESP verdadeira.
+- **Pseudo-PEA:** AESP em que existe atividade mecânica, fraca demais para gerar pulso palpável — estimativas citam **42–86%** das PEA. Sinais indiretos: **POCUS**, linha arterial, EtCO₂ relativamente alto, Doppler. O prognóstico é **melhor** que o da AESP verdadeira.
 - Sobrevivência conforme o ritmo: chocável **~25–30%**; AESP **~10–15%**; assistolia **< 5%**.
 
 **Epidemiologia básica:**
@@ -109,7 +109,7 @@ O algoritmo começa pelo monitor: o ritmo define a via inteira. São quatro, e a
 
 - **IV primeiro**; se falhar ou não for viável → **IO** (tíbia ou úmero). A metanálise de 2025 mostrou **menos RCE sustentado com IO** do que com IV — por isso a ordem importa e não se pula direto para o intraósseo.
 - **Bolus rápido + 20 mL de flush**; em veia periférica, a droga leva **1–2 min** até a circulação central.
-- ⚠️ **A via traqueal para drogas foi REMOVIDA pela AHA 2025** — absorção imprevisível. Não usar esquemas antigos de dose traqueal (a antiga recomendação de 2–2,5× a dose IV caiu): quem precisa de acesso na parada usa **IV** e, se necessário, **IO**.
+- **A via traqueal para drogas foi REMOVIDA pela AHA 2025** — absorção imprevisível. Não usar esquemas antigos de dose traqueal (a antiga recomendação de 2–2,5× a dose IV caiu): quem precisa de acesso na parada usa **IV** e, se necessário, **IO**.
 
 ## 5. Via aérea avançada e ventilação
 
@@ -125,7 +125,7 @@ O algoritmo começa pelo monitor: o ritmo define a via inteira. São quatro, e a
 - Durante a RCP, com compressões efetivas, o EtCO₂ costuma ficar **entre 10 e 20 mmHg**; o alvo é **≥10 mmHg, idealmente ≥20 mmHg**.
 - Valores persistentemente **<10 mmHg** indicam baixo débito e **pior prognóstico** — melhore a qualidade da RCP (profundidade, frequência, recuo e via aérea) e busque causas reversíveis.
 - **Subida súbita e sustentada para ~35–45 mmHg** → provável **retorno da circulação (RCE)**, detectável **sem precisar pausar as compressões** para checar pulso.
-- **No término da ressuscitação:** no paciente **intubado**, a falha em atingir **> 10 mmHg após 20 min** de suporte avançado pode ser considerada **como componente de decisão multimodal** (classe **2b**) — **nunca como critério isolado**; no **não intubado**, **não se usa** valor de corte de ETCO₂ para indicar término (classe **3**, dano).
+- **No término da ressuscitação:** no paciente **intubado**, a falha em atingir **> 10 mmHg após 20 min** de suporte avançado pode ser considerada **como componente de decisão multimodal** (classe **2b**) — **nunca como critério isolado**; no **não intubado**, **não se usa** valor de corte de EtCO₂ para indicar término (classe **3**, dano).
 
 ## 7. Causas reversíveis: procurar desde cedo
 
@@ -146,9 +146,9 @@ Tratar a causa faz parte do ciclo nas duas vias — na não chocável, é o que 
 
 ### 8.2 Término: decisão multimodal e ética
 
-- Antes de decidir, considerar: intervenções adequadas executadas, **tempo colapso → início da RCP**, **ritmo inicial**, tempo até a **1ª desfibrilação**, comorbidades, duração do esforço, achados do ultrassom e **resposta fisiológica** (ETCO₂, pressão diastólica).
+- Antes de decidir, considerar: intervenções adequadas executadas, **tempo colapso → início da RCP**, **ritmo inicial**, tempo até a **1ª desfibrilação**, comorbidades, duração do esforço, achados do ultrassom e **resposta fisiológica** (EtCO₂, pressão diastólica).
 - **Regras de término pré-hospitalar:** **BLS de TOR** — classe **1**, para equipes de suporte básico quando o avançado não está disponível ou está muito atrasado; **ALS de TOR** — **2a**; **regra universal** em sistema escalonado (básico + avançado) — **2a**: PCR não presenciada pelo serviço, nenhum choque aplicado e sem RCE.
-- **ETCO₂:** componente da decisão no **intubado** (falha em > 10 mmHg após 20 min; **2b**); **nunca critério isolado**; sem valor de corte no **não intubado** (**classe 3**, dano).
+- **EtCO₂:** componente da decisão no **intubado** (falha em > 10 mmHg após 20 min; **2b**); **nunca critério isolado**; sem valor de corte no **não intubado** (**classe 3**, dano).
 - **2025:** os serviços devem estar preparados para **terminar a ressuscitação no local** e comunicar a morte; priorizar **RCE sustentado antes do transporte**.
 - **Ética em primeiro plano:** decisão compartilhada, diretivas antecipadas de vontade e, na ausência delas, julgamento substitutivo do representante legal. O padrão é **iniciar RCP** — exceto risco grave de dano físico à equipe, sinais objetivos de morte irreversível ou diretiva antecipada recusando o tratamento. Beneficência, não maleficência, autonomia, justiça e dignidade sustentam a decisão, e a presença da família durante a reanimação pode reduzir luto complicado. Em cada ciclo, "considerar a adequação da ressuscitação contínua".
 
@@ -176,11 +176,11 @@ Tratar a causa faz parte do ciclo nas duas vias — na não chocável, é o que 
 
 **🟡 Como a via aérea avançada muda a ventilação durante a RCP — e o que a capnografia acrescenta?**
 
-**Resposta modelo:** Com via aérea avançada (intubação endotraqueal ou dispositivo supraglótico), as compressões passam a ser **contínuas** e a ventilação vira independente: **1 a cada 6 s (10/min)**, com volume para elevação visível do tórax. Sem via aérea avançada, mantém-se **30:2**. A capnografia de onda contínua confirma a posição do tubo, mostra a qualidade da RCP (ETCO₂ baixo ou em queda pede revisão) e detecta o RCE pelo aumento súbito e sustentado da onda. A via aérea avançada é considerada no algoritmo, sem interromper compressões nem atrasar choques.
+**Resposta modelo:** Com via aérea avançada (intubação endotraqueal ou dispositivo supraglótico), as compressões passam a ser **contínuas** e a ventilação vira independente: **1 a cada 6 s (10/min)**, com volume para elevação visível do tórax. Sem via aérea avançada, mantém-se **30:2**. A capnografia de onda contínua confirma a posição do tubo, mostra a qualidade da RCP (EtCO₂ baixo ou em queda pede revisão) e detecta o RCE pelo aumento súbito e sustentado da onda. A via aérea avançada é considerada no algoritmo, sem interromper compressões nem atrasar choques.
 
-**🔴 Caso: 20 minutos de suporte avançado, paciente intubado, assistolia persistente e ETCO₂ de 8 mmHg. Como se decide o término da reanimação?**
+**🔴 Caso: 20 minutos de suporte avançado, paciente intubado, assistolia persistente e EtCO₂ de 8 mmHg. Como se decide o término da reanimação?**
 
-**Resposta modelo:** A decisão é **multimodal**, depois de garantir que as intervenções foram adequadas: pesar tempo colapso → RCP, ritmo inicial, tempo até a primeira desfibrilação, comorbidades, duração do esforço, ultrassom e resposta fisiológica. No **intubado**, a falha em atingir ETCO₂ **> 10 mmHg após 20 min** pode ser considerada **como um componente** dessa decisão (classe **2b**) — nunca de forma isolada; no **não intubado**, valor de corte não deve ser usado (classe **3**, dano). No pré-hospitalar, as regras **BLS/ALS/universal** de término orientam a equipe (classe 1 para BLS quando o avançado não está disponível; **2a** nas demais). Por fim, entram os referenciais éticos: decisão compartilhada, diretivas antecipadas, dignidade, e a preparação do serviço para terminar no local e comunicar a morte.
+**Resposta modelo:** A decisão é **multimodal**, depois de garantir que as intervenções foram adequadas: pesar tempo colapso → RCP, ritmo inicial, tempo até a primeira desfibrilação, comorbidades, duração do esforço, ultrassom e resposta fisiológica. No **intubado**, a falha em atingir EtCO₂ **> 10 mmHg após 20 min** pode ser considerada **como um componente** dessa decisão (classe **2b**) — nunca de forma isolada; no **não intubado**, valor de corte não deve ser usado (classe **3**, dano). No pré-hospitalar, as regras **BLS/ALS/universal** de término orientam a equipe (classe 1 para BLS quando o avançado não está disponível; **2a** nas demais). Por fim, entram os referenciais éticos: decisão compartilhada, diretivas antecipadas, dignidade, e a preparação do serviço para terminar no local e comunicar a morte.
 
 **🔴 O que caracteriza a parada refratária, o que pode ser considerado e o que não é rotina nesse cenário?**
 

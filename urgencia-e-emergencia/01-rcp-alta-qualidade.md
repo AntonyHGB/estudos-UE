@@ -67,7 +67,7 @@ Por trás da tabela:
 
 Depois da via aérea avançada, a **capnografia contínua** acompanha a reanimação: confirma a posição do tubo, mostra a qualidade das compressões e detecta o retorno da circulação.
 
-- No início da parada, o EtCO2 **cai acentuadamente** (não há transporte de CO2).
+- No início da parada, o EtCO₂ **cai acentuadamente** (não há transporte de CO₂).
 - Durante a RCP, com compressões efetivas, o EtCO₂ costuma ficar **entre 10 e 20 mmHg**; o alvo é **≥10 mmHg, idealmente ≥20 mmHg**.
 - Valores persistentemente **<10 mmHg** indicam baixo débito cardíaco e **pior prognóstico** — melhore a qualidade da RCP e busque causas reversíveis.
 - Uma **subida súbita e sustentada para ~35–45 mmHg** sugere **retorno da circulação (RCE)** — a capnografia detecta isso **sem precisar pausar as compressões** para checar pulso.
@@ -116,7 +116,7 @@ Leitura prática: **o ritmo mais comum não é o chocável**. A maioria das mort
 
 **Resposta modelo:** Dois erros de qualidade. A troca tardia: a profundidade das compressões já cai depois de cerca de 1 minuto, e o socorrista não percebe a fadiga até perto de 5 minutos — a troca deve ser programada a cada 2 minutos. As pausas longas: interrupções devem durar no máximo 10 segundos, e a fração de compressão precisa ficar ≥60% do tempo total. A correção é treinar a troca para durar cerca de 5 segundos e encurtar as análises, retomando as compressões o quanto antes.
 
-**🟡 Paciente intubado em RCP: o EtCO2 se mantém em 12 mmHg e, de repente, sobe para 40 mmHg de forma sustentada. Interprete os dois valores.**
+**🟡 Paciente intubado em RCP: o EtCO₂ se mantém em 12 mmHg e, de repente, sobe para 40 mmHg de forma sustentada. Interprete os dois valores.**
 
 **Resposta modelo:** 12 mmHg está dentro da faixa usual com compressões efetivas (entre 10 e 20 mmHg), porém abaixo do alvo ideal (≥20 mmHg): as compressões geram algum débito — mantenha a qualidade e monitore; valores persistentes abaixo de 10 mmHg indicam baixo débito e pior prognóstico. A subida abrupta e sustentada para ~40 mmHg sugere retorno da circulação espontânea — uma subida para ~35–45 mmHg é o esperado com o RCE. Nesse cenário, a capnografia permite perceber o RCE sem interromper as compressões para checar pulso; a confirmação do pulso vem na checagem seguinte.
 
@@ -130,4 +130,4 @@ Leitura prática: **o ritmo mais comum não é o chocável**. A maioria das mort
 
 **🔴 Ao longo de dois minutos de RCP, a onda de capnografia cai gradualmente de 18 para 9 mmHg, sem mudança na ventilação ou no tubo. O que isso sugere e o que fazer?**
 
-**Resposta modelo:** A queda gradual da onda sugere fadiga do compressor, com perda de profundidade e de qualidade das compressões. A conduta é trocar quem comprime imediatamente (idealmente a troca já seria programada a cada 2 min), revisar profundidade, recuo e frequência, e checar a via aérea. Se, depois de corrigida a qualidade, o EtCO2 permanecer abaixo de 10 mmHg, isso é marcador de baixo débito e pior prognóstico.
+**Resposta modelo:** A queda gradual da onda sugere fadiga do compressor, com perda de profundidade e de qualidade das compressões. A conduta é trocar quem comprime imediatamente (idealmente a troca já seria programada a cada 2 min), revisar profundidade, recuo e frequência, e checar a via aérea. Se, depois de corrigida a qualidade, o EtCO₂ permanecer abaixo de 10 mmHg, isso é marcador de baixo débito e pior prognóstico.

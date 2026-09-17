@@ -4,9 +4,9 @@ Material de estudo de Urgência e Emergência (medicina, 5º ano), com site est�
 
 | Área | Temas | Questões abertas | Quiz |
 |---|---|---|---|
-| [Urgência e Emergência](urgencia-e-emergencia/) | em construção | em construção | em construção |
+| [Urgência e Emergência](urgencia-e-emergencia/) | 12 | 88 | 96 |
 
-> ⚠️ O conteúdo ainda está sendo escrito. Hoje o site monta com o tema `00-modelo.md` e 8 questões de quiz marcadas `[TEMP]`, que serão substituídas.
+> O material está completo: **12 temas**, **88 questões abertas** com resposta modelo e **96 questões de quiz** (8 por tema). O site é gerado por `node build-site.mjs` e publicado no GitHub Pages — veja [Como rodar local](#como-rodar-local) e [Publicar](#publicar).
 
 ## Como funciona
 

@@ -1,6 +1,6 @@
 # 11 — Acidentes com animais peçonhentos
 
-> Ofidismo, araneísmo e escorpionismo no plantão: reconhecer o animal pela clínica, classificar a gravidade e acertar o soro e a dose — com os esquemas do PCDT vigente e as divergências entre documentos oficiais sinalizadas.
+> Ofidismo, araneísmo e escorpionismo no plantão: reconhecer o animal pela clínica, classificar a gravidade e acertar o soro e a dose — com os esquemas do PCDT vigente e as divergências entre documentos oficiais.
 
 ---
 
@@ -54,14 +54,14 @@
 - **Complicações:** **síndrome compartimental** (avaliar pulso, pele fria e perda sensitivo-motora), **abscesso** (a boca da serpente é muito contaminada por gram-negativos), necrose, choque e IRA. Complicações locais podem exigir **desbridamento e fasciotomia**.
 - **Exames** que acompanham a evolução: **CPK** (rabdomiólise), **tempo de coagulação** e função renal (creatinina, ureia, urina I).
 - **Gravidade e dose (PCDT 2026):** classificação pelo **número de segmentos de edema** (1, 2 ou 3) somado às complicações — e a **coagulopatia não define gravidade nem orienta a dose**. Soro antibotrópico (SABR, SABL ou SABC): **3, 6 e 12 ampolas**.
-- ⚠️ O esquema **4/8/12** circula em material antigo e **não consta** em documento oficial vigente; a página antiga do MS ainda exibe 2–4 / 4–8 / 12, uma adaptação do Manual de 2001.
+- O esquema **4/8/12** circula em material antigo e **não consta** em documento oficial vigente; a página antiga do MS ainda exibe 2–4 / 4–8 / 12, uma adaptação do Manual de 2001.
 
 ### 2.3 Acidente crotálico
 
 - Cascavel; veneno **neurotóxico e miotóxico**.
 - **Local discreto** (pouca dor, parestesia, edema leve) — é o que engana.
 - **Sistêmico:** mal-estar, sudorese, sonolência ou inquietação, **fácies miastênica**, ptose e oftalmoplegia, visão turva, diplopia, disfagia, **mialgia** e **urina cor de carne** (mioglobinúria).
-- Complicação temida: **IRA por rabdomiólise** — o material orienta preveni-la com **hidratação venosa + manitol + bicarbonato**.
+- Complicação temida: **IRA por rabdomiólise** — o material da disciplina orienta preveni-la com **hidratação venosa + manitol + bicarbonato**.
 - Classificação por fácies miastênica/visão turva, mialgia, urina escura, oligúria/anúria e tempo de coagulação. Soro **SAC** (na falta, **SABC**): **5, 10 e 20 ampolas** conforme a gravidade.
 
 ### 2.4 Acidente laquético
@@ -83,7 +83,7 @@
 - Errante e agressiva; **mais comum no Sudeste**; pica extremidades.
 - **Local:** sinais leves. **Sistêmico precoce:** taquicardia, hipertensão, sudorese, agitação psicomotora, visão turva, vômitos, sialorreia, diarreia, priapismo, hipertonia — pode evoluir com hipotensão, choque e **edema agudo de pulmão**; o quadro é fácil de confundir com acidente ofídico. A **hidratação pode piorar** a congestão.
 - Crianças com quadro grave: **leucocitose com neutrofilia, hiperglicemia, acidose metabólica** e taquicardia sinusal.
-- Soro antiaracnídeo (**SAA**): **leve sem soro**; **moderado 2 a 4** ampolas; **grave 5 a 10**. ⚠️ Há **divergência entre documentos oficiais**: o Ofício Circular nº 2/2014 (protocolo de escassez) registra **3** ampolas em crianças menores de 7 anos com quadro moderado e **6** no grave.
+- Soro antiaracnídeo (**SAA**): **leve sem soro**; **moderado 2 a 4** ampolas; **grave 5 a 10**. Há **divergência entre documentos oficiais**: o Ofício Circular nº 2/2014 (protocolo de escassez) registra **3** ampolas em crianças menores de 7 anos com quadro moderado e **6** no grave.
 
 ### 3.2 Aranha marrom (Loxosceles)
 
@@ -91,15 +91,15 @@
 - **Forma cutânea (99%):** **placa marmórea** — base eritematosa com áreas de isquemia central e zonas violáceas —, que evolui para necrose e úlcera de difícil cicatrização. As alterações cutâneas demoram **horas a dias** para aparecer.
 - **Forma cutâneo-visceral (1%):** hemólise → **IRA** por lesão tubular e **CIVD**.
 - **Leve:** lesão atípica — **sem tratamento específico**, com retorno diário por 72 h.
-- **Moderada:** **prednisona por 5 dias, sem antiveneno**, pelo Ofício Circular nº 2/2014 (base dos protocolos estaduais). ⚠️ **Divergência entre materiais do próprio MS:** a página atual de aranhas registra **5 ampolas** de soro também na forma moderada.
-- **Grave:** forma cutânea → **SALox/SAA 5 ampolas + prednisona por 7 dias**; cutâneo-hemolítica → **10 ampolas + prednisona por 7 dias**. ❓ A formulação "7–10 dias" não foi localizada em fonte vigente (o texto geral fala em 5 a 10 dias). IRA pode exigir **diálise precoce**.
+- **Moderada:** **prednisona por 5 dias, sem antiveneno**, pelo Ofício Circular nº 2/2014 (base dos protocolos estaduais). **Divergência entre materiais do próprio MS:** a página atual de aranhas registra **5 ampolas** de soro também na forma moderada.
+- **Grave:** forma cutânea → **SALox/SAA 5 ampolas + prednisona por 7 dias**; cutâneo-hemolítica → **10 ampolas + prednisona por 7 dias**. A formulação "7–10 dias" de materiais mais antigos não corresponde às referências vigentes: na forma grave, **7 dias** (texto geral: 5 a 10 dias). IRA pode exigir **diálise precoce**.
 
 ### 3.3 Viúva negra (Latrodectus)
 
 - Mais comum no **Nordeste**; sinais locais discretos (dor leve, pápula eritematosa, sudorese localizada).
 - **Sistêmico:** **contraturas e flexões dolorosas** (podem simular **abdome agudo**), **fácies latrodectísmica**, taquicardia seguida de bradicardia, tremores, ansiedade, rubor de face e pescoço, hiperreflexia, retenção urinária e priapismo, ptose e edema bipalpebral; risco de EAP e de arritmias — fazer **ECG seriado**.
 - **Tratamento sintomático:** benzodiazepínicos, **gluconato de cálcio a 10%** e ECG.
-- ⚠️ **Não há soro antilatrodético disponível no Brasil**, e o antiaracnídeo trivalente (**Loxosceles + Phoneutria + Tityus**) **não neutraliza** o veneno da viúva negra. O soro importado por via intramuscular, descrito no Manual de 2001, **não faz parte da realidade do SUS**.
+- **Não há soro antilatrodético disponível no Brasil**, e o antiaracnídeo trivalente (**Loxosceles + Phoneutria + Tityus**) **não neutraliza** o veneno da viúva negra. O soro importado por via intramuscular, descrito no Manual de 2001, **não faz parte da realidade do SUS**.
 
 ## 4. Escorpionismo
 

@@ -18,7 +18,7 @@ Por que a circulação vem primeiro no intoxicado:
 - **Tempo-resposta:** compressões precoces e estabilização hemodinâmica rápida reduzem o tempo sem perfusão e melhoram a sobrevida.
 
 - **Não retardar** o suporte nem o contato com o centro de intoxicações por não saber especificar a substância; e não atrasar a intubação quando indicada.
-- ⚠️ No material, o slide pré-hospitalar chega a grafar "ABCDE"; para o intoxicado grave/PCR, a sequência é o **CABDE**.
+- **Atenção:** o material da disciplina chega a grafar "ABCDE" em trecho pré-hospitalar; para o intoxicado grave/PCR, a sequência é o **CABDE**.
 
 ### 1.2 Via aérea definitiva e a escolha da curarização
 
@@ -57,7 +57,7 @@ Por que a circulação vem primeiro no intoxicado:
 | **Hipnótico-sedativa e narcótica** | Depressão do SNC e respiratória, miose, hipotermia | Opioides, benzodiazepínicos, barbitúricos, álcool | **Naloxona**; flumazenil com critérios |
 | **Extrapiramidal** | Distonias, contrações, fala lenta/parkinsonismo | Haloperidol, clorpromazina, metoclopramida | **Biperideno** (5 mg/mL IM) / benzodiazepínicos |
 
-⚠️ **Pegadinha clássica:** sudorese é efeito **muscarínico** (glândulas sudoríparas respondem à acetilcolina), não nicotínico.
+**Pegadinha clássica:** sudorese é efeito **muscarínico** (glândulas sudoríparas respondem à acetilcolina), não nicotínico.
 
 ### 1.6 Pistas por distúrbio: ECG, hipotensão e convulsão
 
@@ -110,7 +110,7 @@ Por que a circulação vem primeiro no intoxicado:
 
 - Repetir a dose oral se houver vômito logo após a administração. Em **70 kg**, o ataque oral ≈ **9,8 g**.
 - **Tempo:** iniciar **o quanto antes** — máxima eficácia quando < **8 h** —, mas **ainda há benefício tardio**, inclusive na falência hepática estabelecida.
-- **Duração:** pode **estender** além de 21 h se lesão hepática, INR alterado ou paracetamol persistente; critérios de suspensão incluem **paracetamol < 10 µg/mL**, ALT/AST em queda e **INR < 2**. Cursos mais curtos são possíveis com critérios — o "1 a 3 dias" do material corresponde às **17 doses/72 h**, não a um esquema solto.
+- **Duração:** pode **estender** além de 21 h se lesão hepática, INR alterado ou paracetamol persistente; critérios de suspensão incluem **paracetamol < 10 µg/mL**, ALT/AST em queda e **INR < 2**. Cursos mais curtos são possíveis com critérios — o "1 a 3 dias" corresponde às **17 doses/72 h**, não a um esquema solto.
 
 ### 3.2 Flumazenil — dose, teto e a separação que cai em prova
 

@@ -70,7 +70,7 @@ Objetivo comum: melhorar a oferta e reduzir o consumo de oxigênio do miocárdio
 - **IV** é indicada no NSTE-ACS para **isquemia persistente, insuficiência cardíaca ou hipertensão**; no STEMI, pode ser útil quando há hipertensão ou IC.
 - **Contraindicações:** PAS <90 mmHg (ou queda ≥30 mmHg em relação à basal); bradicardia ou taquicardia acentuada; inibidor da fosfodiesterase (**sildenafil nas últimas 24 h, tadalafil nas últimas 48 h**); **suspeita de infarto do ventrículo direito**.
 - Efeitos adversos comuns: cefaleia, rubor, taquicardia, tontura e hipotensão ortostática. A hipotensão costuma responder ao decúbito e a volume.
-- ⚠️ Macete de prova: IAM inferior que fica hipotenso após nitrato — pense em RVI.
+- Macete de prova: IAM inferior que fica hipotenso após nitrato — pense em RVI.
 
 ### 5.2 Morfina
 
