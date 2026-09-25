@@ -35,6 +35,50 @@ const SITES = [
 const BG_LIGHT = '#f8fafc';
 const BG_DARK = '#0b1120';
 
+/* ================================ configuração pública do Firebase ================================
+   O progresso na nuvem é opcional. Ele só existe quando há um
+   `firebase-config.json` na raiz com a configuração PÚBLICA do app web
+   (apiKey, projectId, etc.). Isso NÃO é segredo: a segurança vem das regras
+   do Firestore (ver firestore.rules) e da aprovação manual do admin, nunca de
+   esconder esses campos. Chaves de administrador (service account, private_key,
+   client_email...) são recusadas explicitamente para não vazarem no HTML. */
+const FIREBASE_SDK_VERSION = '12.19.0';
+const FIREBASE_PUBLIC_FIELDS = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId', 'measurementId'];
+const FIREBASE_SECRET_HINTS = ['private_key', 'privatekey', 'client_email', 'clientemail', 'serviceaccount', 'service_account', 'refresh_token', 'refreshtoken'];
+
+function carregarFirebaseConfig() {
+  const p = join(ROOT, 'firebase-config.json');
+  if (!existsSync(p)) return null;
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(p, 'utf8'));
+  } catch (e) {
+    throw new Error(`firebase-config.json não é JSON válido — ${e.message}`);
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error('firebase-config.json precisa ser um objeto com a config pública do app web.');
+  }
+  const suspeitas = Object.keys(raw).filter((k) =>
+    FIREBASE_SECRET_HINTS.some((h) => k.toLowerCase().includes(h))
+  );
+  if (suspeitas.length) {
+    throw new Error(
+      `firebase-config.json parece conter credencial de administrador (${suspeitas.join(', ')}). ` +
+        'Use SOMENTE a config pública do app web; nunca service account/private key/refresh token.'
+    );
+  }
+  const cfg = {};
+  for (const k of FIREBASE_PUBLIC_FIELDS) {
+    if (typeof raw[k] === 'string' && raw[k].trim()) cfg[k] = raw[k].trim();
+  }
+  if (!cfg.apiKey || !cfg.projectId || !cfg.appId) {
+    throw new Error('firebase-config.json precisa de apiKey, projectId e appId.');
+  }
+  return cfg;
+}
+
+const firebaseConfig = carregarFirebaseConfig();
+
 /* ================================ PNG (sem dependências) ================================ */
 
 const CRC_TABLE = (() => {
@@ -699,9 +743,19 @@ main{flex:1;min-width:0;padding:34px clamp(18px,4vw,58px) 88px;max-width:1120px;
   cursor:pointer;font:inherit;font-weight:600;min-height:44px;margin:6px 6px 0 0}
 @media (prefers-color-scheme: dark){.btn{color:${BG_DARK}}}
 .btn.ghost{background:var(--panel);color:var(--text);border-color:var(--border)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
 .note{font-size:.85em;padding:10px 14px;border-radius:9px;margin-top:10px}
 .note.ok{background:color-mix(in srgb, var(--green) 15%, var(--panel));border:1px solid var(--green)}
 .note.err{background:color-mix(in srgb, var(--red) 12%, var(--panel));border:1px solid var(--red)}
+.note.warn{background:color-mix(in srgb, var(--yellow) 14%, var(--panel));border:1px solid var(--yellow)}
+.conta{display:flex;flex-direction:column;gap:10px;margin:10px 0}
+.conta input{padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);font:inherit;font-size:1em;min-height:46px}
+.tag{display:inline-block;font-size:.78em;font-weight:700;border-radius:999px;padding:3px 10px;
+  margin:2px 6px 2px 0;border:1px solid var(--border);color:var(--muted)}
+.tag.ok{border-color:var(--green);color:var(--green)}
+.tag.warn{border-color:var(--yellow);color:var(--yellow)}
+.tag.pend{border-color:var(--accent);color:var(--accent)}
 
 /* desempenho por nível */
 .perf{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;
@@ -1021,6 +1075,8 @@ function buildSite(site) {
     emoji: site.emoji,
     fp: fingerprint,
     chash: contentHash,
+    firebase: firebaseConfig,
+    firebaseSdk: FIREBASE_SDK_VERSION,
     topics: topics.map((t) => ({
       id: t.id,
       fullTitle: t.fullTitle,
@@ -1086,6 +1142,18 @@ const LS = (function(){
 
 if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch(e){} }
 
+/* Carimbo de tempo por item. Permite mesclar o progresso de dois aparelhos sem
+   que um sobrescreva o outro às cegas: na hora de sincronizar, a versão mais
+   nova de cada marcação/resposta vence. Fica num único mapa para não poluir o
+   localStorage com uma chave por item. */
+function tsMap(){
+  var raw = LS.get(SKEY + ':ts');
+  if (!raw) return {};
+  try { var o = JSON.parse(raw); return (o && typeof o === 'object') ? o : {}; } catch(e){ return {}; }
+}
+function tsSet(key, at){ var m = tsMap(); m[key] = at; LS.set(SKEY + ':ts', JSON.stringify(m)); }
+function tsGet(key){ return +tsMap()[key] || 0; }
+
 var ordemRevisao = LS.get(SKEY + ':ordem') === '1';
 function toggleOrdem(){
   ordemRevisao = !ordemRevisao;
@@ -1093,12 +1161,14 @@ function toggleOrdem(){
   renderHome();
 }
 function getMark(t, i){ return LS.get(SKEY + ':' + t + ':' + i) || ''; }
-function setMark(t, i, v){ var k = SKEY + ':' + t + ':' + i; if (v) LS.set(k, v); else LS.del(k); }
+function setMarkRaw(t, i, v){ var k = SKEY + ':' + t + ':' + i; if (v) LS.set(k, v); else LS.del(k); }
+function setMark(t, i, v){ setMarkRaw(t, i, v); tsSet('m:' + t + ':' + i, Date.now()); }
 function getQuizAns(t, i){ var v = LS.get(SKEY + ':quiz:v3:' + t + ':' + i); return v === null ? null : +v; }
-function setQuizAns(t, i, v){ LS.set(SKEY + ':quiz:v3:' + t + ':' + i, String(v)); }
+function setQuizAnsRaw(t, i, v){ LS.set(SKEY + ':quiz:v3:' + t + ':' + i, String(v)); }
+function setQuizAns(t, i, v){ setQuizAnsRaw(t, i, v); tsSet('q:' + t + ':' + i, Date.now()); }
 function clearQuiz(t){
   var top = DATA.topics.find(function(x){ return x.id === t; });
-  if (top) top.quiz.forEach(function(_, i){ LS.del(SKEY + ':quiz:v3:' + t + ':' + i); });
+  if (top) top.quiz.forEach(function(_, i){ LS.del(SKEY + ':quiz:v3:' + t + ':' + i); tsSet('q:' + t + ':' + i, Date.now()); });
 }
 function topicProgress(t){
   var done = 0;
@@ -1112,101 +1182,6 @@ function quizProgress(t){
     if (a !== null){ answered++; if (a === q.c) correct++; }
   });
   return { answered: answered, correct: correct, total: t.quiz.length };
-}
-
-/* ---------- codigo de progresso (transferencia entre aparelhos) ----------
-   Empacota em bits: 2 por questao aberta (vazio/ok/parcial/errei) e 3 por
-   questao de quiz (nao respondida + ate 5 alternativas). Resultado em
-   base64url cabe folgado numa URL ou numa mensagem. */
-var MARKS = ['', 'ok', 'meh', 'bad'];
-function b64url(bytes){
-  var s = '';
-  for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
-  return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
-}
-function unb64url(str){
-  var s = str.replace(/-/g,'+').replace(/_/g,'/');
-  while (s.length % 4) s += '=';
-  var bin = atob(s), out = new Uint8Array(bin.length);
-  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-function encodeProgress(){
-  var bits = [];
-  var push = function(val, n){ for (var b = n - 1; b >= 0; b--) bits.push((val >> b) & 1); };
-  push(4, 8);                    // versao do formato (4 = com hash do conteudo)
-  push(DATA.fp & 0xffff, 16);    // impressao digital do layout (temas e contagens)
-  push(DATA.chash & 0xffff, 16); // hash do conteudo das questoes
-  DATA.topics.forEach(function(t){
-    t.cards.forEach(function(_, i){ push(MARKS.indexOf(getMark(t.id, i)) < 0 ? 0 : MARKS.indexOf(getMark(t.id, i)), 2); });
-  });
-  DATA.topics.forEach(function(t){
-    t.quiz.forEach(function(_, i){
-      var a = getQuizAns(t.id, i);
-      push(a === null ? 0 : Math.min(a + 1, 7), 3);
-    });
-  });
-  var bytes = new Uint8Array(Math.ceil(bits.length / 8));
-  for (var i = 0; i < bits.length; i++) if (bits[i]) bytes[i >> 3] |= 128 >> (i & 7);
-  return b64url(bytes);
-}
-function decodeProgress(code){
-  var bytes;
-  try { bytes = unb64url(code.trim()); } catch (e) { return { error: 'Código inválido — confira se foi copiado por inteiro.' }; }
-  var pos = 0;
-  var read = function(n){ var v = 0; for (var k = 0; k < n; k++){ var bit = (bytes[pos >> 3] >> (7 - (pos & 7))) & 1; v = (v << 1) | bit; pos++; } return v; };
-  var payload = 0;
-  DATA.topics.forEach(function(t){ payload += t.cards.length * 2 + t.quiz.length * 3; });
-  if (bytes.length * 8 < 24) return { error: 'Código incompleto para este material.' };
-  var ver = read(8);
-  if (ver !== 3 && ver !== 4) return { error: 'Código de formato antigo ou desconhecido — gere um novo na tela "Levar progresso".' };
-  if (bytes.length * 8 < (ver === 4 ? 40 : 24) + payload) return { error: 'Código incompleto para este material.' };
-  var fp = read(16);
-  var chash = ver === 4 ? read(16) : null;
-  var marks = [], quiz = [], nMarks = 0, nQuiz = 0, invalidas = 0;
-  DATA.topics.forEach(function(t){
-    t.cards.forEach(function(_, i){ var v = read(2); marks.push([t.id, i, MARKS[v]]); if (v) nMarks++; });
-  });
-  DATA.topics.forEach(function(t){
-    t.quiz.forEach(function(q, i){
-      var v = read(3);
-      // Alternativa fora do intervalo da questão: ignora, não aplica.
-      if (v > 0 && v - 1 >= q.a.length){ invalidas++; return; }
-      quiz.push([t.id, i, v]); if (v) nQuiz++;
-    });
-  });
-  return {
-    ver: ver,
-    fpMatch: fp === (DATA.fp & 0xffff),
-    conteudoOk: chash === null ? null : chash === (DATA.chash & 0xffff),
-    marks: marks, quiz: quiz, nMarks: nMarks, nQuiz: nQuiz, invalidas: invalidas
-  };
-}
-function applyProgress(p){
-  p.marks.forEach(function(m){ setMark(m[0], m[1], m[2]); });
-  p.quiz.forEach(function(q){ if (q[2] > 0) setQuizAns(q[0], q[1], q[2] - 1); else LS.del(SKEY + ':quiz:v3:' + q[0] + ':' + q[1]); });
-}
-function avisoVersao(p){
-  if (p.ver === 3) return '\\n\\nObs.: código no formato antigo — não dá para conferir se o conteúdo das questões mudou desde então.';
-  if (!p.fpMatch) return '\\n\\nATENÇÃO: este código foi gerado para uma versão diferente do material (temas ou quantidades mudaram). As marcações podem ficar trocadas.';
-  if (p.conteudoOk === false) return '\\n\\nATENÇÃO: as questões foram reescritas desde que este código foi gerado. As marcações valem, mas as respostas do quiz podem não corresponder mais.';
-  return '';
-}
-function notaInvalidas(p){
-  return p.invalidas ? '\\n\\n' + p.invalidas + ' resposta(s) com alternativa fora do intervalo serão ignoradas.' : '';
-}
-// Aceita link (?p=...), código puro e o backup em JSON ({v, site, code}).
-function extrairCodigo(raw){
-  var link = raw.match(/[?&]p=([A-Za-z0-9_-]+)/);
-  if (link) return { code: link[1] };
-  var t = raw.trim();
-  if (t.charAt(0) === '{'){
-    var obj;
-    try { obj = JSON.parse(t); } catch (e) { return { error: 'O texto parece um backup (.json), mas está corrompido — baixe de novo e tente importar.' }; }
-    if (!obj || typeof obj.code !== 'string' || !obj.code.trim()) return { error: 'JSON sem o campo "code" — não parece um backup deste material.' };
-    return { code: obj.code.trim(), site: typeof obj.site === 'string' ? obj.site : '' };
-  }
-  return { code: t };
 }
 
 /* ---------- desempenho por nivel ----------
@@ -1366,7 +1341,7 @@ function renderSidebar(activeId){
   var nRev = quizErrados().length + abertasRevisar().length;
   h += '<a class="nav-item' + (activeId === 'revisar' ? ' active' : '') + '" href="#revisar"><span class="num">🔁</span> Revisar erros' +
        '<span class="prog">' + (nRev ? nRev : '') + '</span></a>';
-  h += '<a class="nav-item' + (activeId === 'sync' ? ' active' : '') + '" href="#sync"><span class="num">📲</span> Levar progresso</a>';
+  h += '<a class="nav-item' + (activeId === 'nuvem' ? ' active' : '') + '" href="#nuvem"><span class="num">☁️</span> Progresso na nuvem</a>';
   h += '<div class="nav-label">Temas</div>';
   DATA.topics.forEach(function(t){
     var qp = quizProgress(t);
@@ -1462,78 +1437,511 @@ function renderHome(){
   window.scrollTo(0,0);
 }
 
-/* ---------- transferir progresso ---------- */
-function renderSync(){
-  renderSidebar('sync');
-  document.getElementById('tbTitle').textContent = 'Levar progresso';
-  var code = encodeProgress();
-  var marks = 0, quizzes = 0;
-  DATA.topics.forEach(function(t){
-    t.cards.forEach(function(_, i){ if (getMark(t.id, i)) marks++; });
-    t.quiz.forEach(function(_, i){ if (getQuizAns(t.id, i) !== null) quizzes++; });
+/* ---------- progresso na nuvem (Firebase, opcional) ----------
+   O estudo continua 100% local e offline. A nuvem é opt-in: só existe quando o
+   mantenedor adiciona firebase-config.json e o usuário entra com conta aprovada
+   pelo admin. Sem config, sem internet ou offline, nada aqui derruba o material:
+   o painel só explica o estado. O SDK é carregado sob demanda; se o CDN falhar,
+   degradamos para o modo local. */
+var CLOUD_SCHEMA = 1;
+var FB = { loaded:false, error:'', auth:null, firestore:null, authM:null, fs:null };
+var CLOUD_USER = null;
+var CLOUD_APROVACAO = 'unknown';
+var CLOUD_MSG = null;
+var CLOUD_ULTIMO_RESUMO = null;
+var CLOUD_BOOT = false;
+/* Cooldown do reenvio de verificação: evita confundir o usuário com envios
+   repetidos (e ajuda quando o próprio Firebase responde auth/too-many-requests,
+   que é limite do servidor, não do botão). */
+var CLOUD_REENVIO_ATE = 0;
+var CLOUD_REENVIO_TIMER = null;
+var CLOUD_REENVIO_COOLDOWN_MS = 60000;
+
+function fbConfigurado(){ return !!(DATA.firebase && DATA.firebase.apiKey && DATA.firebase.projectId && DATA.firebase.appId); }
+
+async function fbCarregar(){
+  if (FB.loaded) return true;
+  if (!fbConfigurado()) return false;
+  if (FB.error) return false;
+  var base = 'https://www.gstatic.com/firebasejs/' + (DATA.firebaseSdk || '12.19.0') + '/';
+  try {
+    var appM = await import(base + 'firebase-app.js');
+    var authM = await import(base + 'firebase-auth.js');
+    var fsM = await import(base + 'firebase-firestore.js');
+    var app = appM.initializeApp(DATA.firebase);
+    FB.authM = authM; FB.fs = fsM;
+    FB.auth = authM.getAuth(app);
+    FB.firestore = fsM.getFirestore(app);
+    FB.loaded = true;
+    return true;
+  } catch(e){
+    FB.error = (typeof navigator !== 'undefined' && navigator.onLine === false)
+      ? 'Sem conexão agora. A nuvem precisa de internet; o estudo offline continua normal.'
+      : 'Não consegui carregar o Firebase (config, rede ou CDN). O estudo offline continua normal.';
+    return false;
+  }
+}
+
+function authErro(e){
+  var c = (e && e.code) || '';
+  var mapa = {
+    'auth/email-already-in-use':'Este e-mail já tem conta. Use "Entrar".',
+    'auth/invalid-email':'E-mail inválido.',
+    'auth/weak-password':'Senha fraca: use ao menos 6 caracteres.',
+    'auth/missing-password':'Digite a senha.',
+    'auth/wrong-password':'Senha incorreta.',
+    'auth/user-not-found':'Conta não encontrada. Crie uma.',
+    'auth/invalid-credential':'E-mail ou senha incorretos.',
+    'auth/invalid-login-credentials':'E-mail ou senha incorretos.',
+    'auth/too-many-requests':'Muitas tentativas. Aguarde um pouco.',
+    'auth/network-request-failed':'Falha de rede. Confira a conexão.',
+    'auth/operation-not-allowed':'O login por e-mail/senha está desativado no projeto Firebase.',
+    'auth/user-disabled':'Esta conta foi desativada.'
+  };
+  return mapa[c] || ('Falha de autenticação' + (c ? ' (' + c + ')' : '') + '.');
+}
+/* Erros de sendEmailVerification. Mostra o código quando não há tradução pronta:
+   é o que permite diagnosticar template/quota/domínio no console do Firebase sem
+   vazar e-mail nem credencial. */
+function verifErro(e){
+  var c = (e && e.code) || '';
+  var mapa = {
+    'auth/too-many-requests':'Muitos envios seguidos. O Firebase bloqueia temporariamente os próximos; aguarde alguns minutos',
+    'auth/network-request-failed':'Falha de rede ao enviar. Confira a conexão e tente "Reenviar"',
+    'auth/user-token-expired':'Sessão expirada. Saia e entre de novo antes de reenviar',
+    'auth/unauthorized-continue-uri':'Este domínio não está autorizado no Firebase (Authentication → Settings → Authorized domains)',
+    'auth/missing-continue-uri':'O projeto Firebase está sem URL de continuação configurada para o e-mail',
+    'auth/invalid-continue-uri':'A URL de continuação do e-mail é inválida no projeto Firebase'
+  };
+  var base = mapa[c] || 'Não consegui enviar o e-mail de verificação';
+  return base + (c ? ' — código: ' + c : '') + '.';
+}
+/* Tenta enviar o e-mail de verificação e devolve {ok, erro}. Aplica cooldown
+   local para não repetir em sequência; o cooldown NÃO é acionado quando o
+   envio falha por rede, para o usuário poder tentar de novo logo. */
+async function enviarVerificacao(user){
+  var rest = reenvioRestante();
+  if (rest > 0) return { ok:false, erro:'Aguarde ' + rest + 's antes de reenviar o e-mail.' };
+  try {
+    await FB.authM.sendEmailVerification(user);
+    CLOUD_REENVIO_ATE = Date.now() + CLOUD_REENVIO_COOLDOWN_MS;
+    agendarRedrawCooldown(CLOUD_REENVIO_COOLDOWN_MS);
+    return { ok:true };
+  } catch(e){
+    var c = (e && e.code) || '';
+    if (c === 'auth/too-many-requests'){
+      CLOUD_REENVIO_ATE = Date.now() + CLOUD_REENVIO_COOLDOWN_MS;
+      agendarRedrawCooldown(CLOUD_REENVIO_COOLDOWN_MS);
+    }
+    return { ok:false, erro: verifErro(e) };
+  }
+}
+function reenvioRestante(){
+  var ms = CLOUD_REENVIO_ATE - Date.now();
+  return ms > 0 ? Math.ceil(ms / 1000) : 0;
+}
+/* Redesenha a tela quando o cooldown termina para o botão voltar a ficar ativo.
+   Chamar .unref() evita segurar o processo Node nos testes. */
+function agendarRedrawCooldown(ms){
+  if (CLOUD_REENVIO_TIMER || typeof setTimeout !== 'function') return;
+  CLOUD_REENVIO_TIMER = setTimeout(function(){
+    CLOUD_REENVIO_TIMER = null;
+    nuvemRedraw();
+  }, ms + 50);
+  if (CLOUD_REENVIO_TIMER && typeof CLOUD_REENVIO_TIMER.unref === 'function') CLOUD_REENVIO_TIMER.unref();
+}
+function fbErro(e){
+  var c = (e && e.code) || '';
+  if (c === 'permission-denied') return 'permissão negada pelas regras (conta aprovada e e-mail verificado?).';
+  if (c === 'unavailable') return 'sem conexão com o Firestore.';
+  if (c === 'failed-precondition') return 'Firestore indisponível ou mal configurado.';
+  if (c === 'not-found') return 'documento não encontrado.';
+  if (c === 'resource-exhausted' || c === 'deadline-exceeded') return 'limite/tempo excedido.';
+  return c || 'erro de rede.';
+}
+
+async function nuvemAtualizarEstado(){
+  CLOUD_USER = (FB.loaded && FB.auth && FB.auth.currentUser) ? FB.auth.currentUser : null;
+  CLOUD_APROVACAO = 'unknown';
+  if (!CLOUD_USER) return;
+  if (!CLOUD_USER.emailVerified){
+    try { await CLOUD_USER.reload(); } catch(e){}
+    if (!CLOUD_USER.emailVerified){ CLOUD_APROVACAO = 'nao-verificado'; return; }
+  }
+  CLOUD_APROVACAO = 'carregando';
+  try {
+    await CLOUD_USER.getIdToken(true);
+    var snap = await FB.fs.getDoc(FB.fs.doc(FB.firestore, 'acessos', CLOUD_USER.uid));
+    CLOUD_APROVACAO = (snap.exists() && snap.data().aprovado === true) ? 'aprovado' : 'pendente';
+  } catch(e){
+    var c = (e && e.code) || '';
+    if (c === 'permission-denied') CLOUD_APROVACAO = 'pendente';
+    else if (c === 'unavailable' || c === 'failed-precondition') CLOUD_APROVACAO = 'offline';
+    else CLOUD_APROVACAO = 'erro';
+  }
+}
+
+function nuvemRedraw(){ if (location.hash === '#nuvem') renderNuvem(); }
+function nuvemAgendarBoot(){
+  if (!fbConfigurado() || CLOUD_BOOT) return;
+  CLOUD_BOOT = true;
+  nuvemBoot();
+}
+async function nuvemBoot(){
+  if (!await fbCarregar()){ nuvemRedraw(); return; }
+  FB.authM.onAuthStateChanged(FB.auth, async function(){
+    await nuvemAtualizarEstado();
+    nuvemRedraw();
   });
-  // Em file:// não existe link funcional entre aparelhos — só o código.
-  var local = location.protocol === 'file:';
-  var link = location.origin + location.pathname + '?p=' + code;
-  var h = '<div class="topic-head"><h1>📲 Levar progresso para outro aparelho</h1>' +
-          '<p class="sub">Seu progresso fica salvo só neste navegador. Para continuar de onde parou no celular (ou voltar para o PC), use o link ou o código abaixo.</p></div>';
-  h += '<div class="sync-box"><h3>1. Exportar deste aparelho</h3>' +
-       '<p>Marcações: <strong>' + marks + '</strong> · Respostas de quiz: <strong>' + quizzes + '</strong></p>' +
-       (local
-         ? '<p>Esta cópia foi aberta direto do disco (<code>file://</code>), onde link de compartilhamento não funciona. Copie o código abaixo e cole-o no campo de importar do outro aparelho.</p>'
-         : '<p>Abra este link no outro aparelho (mande no WhatsApp para você mesmo, por exemplo):</p>') +
-       '<textarea id="expLink" readonly onclick="this.select()">' + (local ? code : link) + '</textarea>' +
-       '<button class="btn" onclick="copyText(document.getElementById(\\'expLink\\').value, this)">' + (local ? '📋 Copiar código' : '📋 Copiar link') + '</button>' +
-       '<button class="btn ghost" onclick="downloadBackup()">💾 Baixar backup</button>' +
-       '<div id="copyNote"></div></div>';
-  h += '<div class="sync-box"><h3>2. Importar neste aparelho</h3>' +
-       '<p>Cole aqui o link, o código ou o backup baixado no outro aparelho:</p>' +
-       '<textarea id="impCode" placeholder="Cole o link, o código ou o arquivo de backup (.json) aqui..."></textarea>' +
-       '<button class="btn" onclick="doImport()">⬇️ Importar progresso</button>' +
-       '<div id="impNote"></div></div>';
-  h += '<div class="sync-box"><h3>Dica para o celular</h3>' +
-       '<p>Instale o material na tela de início (no iPhone: Compartilhar → <em>Adicionar à Tela de Início</em>; no Android: menu → <em>Instalar app</em>). ' +
-       'Além de abrir sem a barra do navegador e funcionar offline, isso protege seu progresso: o Safari apaga dados de sites não visitados por 7 dias, mas não os de apps instalados. ' +
-       'Importe seu progresso <strong>depois</strong> de instalar — o app instalado tem armazenamento separado da aba normal.</p></div>';
+  await nuvemAtualizarEstado();
+  nuvemRedraw();
+}
+function nuvemRetentar(){
+  FB.error = ''; CLOUD_BOOT = false; CLOUD_MSG = { t:'info', m:'Recarregando a nuvem…' };
+  nuvemRedraw(); nuvemAgendarBoot();
+}
+
+async function nuvemEntrar(){
+  var email = (document.getElementById('nvEmail').value || '').trim();
+  var senha = document.getElementById('nvSenha').value || '';
+  if (!email || !senha){ CLOUD_MSG = { t:'err', m:'Preencha e-mail e senha.' }; nuvemRedraw(); return; }
+  CLOUD_MSG = { t:'info', m:'Entrando…' }; nuvemRedraw();
+  if (!await fbCarregar()){ CLOUD_MSG = { t:'err', m:FB.error || 'Nuvem indisponível.' }; nuvemRedraw(); return; }
+  try {
+    await FB.authM.signInWithEmailAndPassword(FB.auth, email, senha);
+    CLOUD_MSG = { t:'ok', m:'Sessão iniciada.' };
+  } catch(e){ CLOUD_MSG = { t:'err', m:authErro(e) }; }
+  await nuvemAtualizarEstado();
+  nuvemRedraw();
+}
+async function nuvemRegistrar(){
+  var email = (document.getElementById('nvEmail').value || '').trim();
+  var senha = document.getElementById('nvSenha').value || '';
+  if (!email || !senha){ CLOUD_MSG = { t:'err', m:'Preencha e-mail e senha.' }; nuvemRedraw(); return; }
+  CLOUD_MSG = { t:'info', m:'Criando conta…' }; nuvemRedraw();
+  if (!await fbCarregar()){ CLOUD_MSG = { t:'err', m:FB.error || 'Nuvem indisponível.' }; nuvemRedraw(); return; }
+  try {
+    var r = await FB.authM.createUserWithEmailAndPassword(FB.auth, email, senha);
+    var envio = await enviarVerificacao(r.user);
+    CLOUD_MSG = envio.ok
+      ? { t:'ok', m:'Conta criada. Enviei um e-mail de verificação; confirme para o admin aprovar o acesso.' }
+      : { t:'warn', m:'Conta criada, mas o e-mail de verificação não saiu: ' + envio.erro + ' Você pode usar "Reenviar e-mail de verificação".' };
+  } catch(e){ CLOUD_MSG = { t:'err', m:authErro(e) }; }
+  await nuvemAtualizarEstado();
+  nuvemRedraw();
+}
+async function nuvemSair(){
+  if (FB.loaded && FB.authM && FB.auth){ try { await FB.authM.signOut(FB.auth); } catch(e){} }
+  CLOUD_USER = null; CLOUD_APROVACAO = 'unknown';
+  CLOUD_MSG = { t:'info', m:'Você saiu. O progresso local continua neste navegador.' };
+  nuvemRedraw();
+}
+async function nuvemReenviar(){
+  if (!FB.loaded || !FB.auth || !FB.auth.currentUser) return;
+  var envio = await enviarVerificacao(FB.auth.currentUser);
+  CLOUD_MSG = envio.ok
+    ? { t:'ok', m:'E-mail de verificação reenviado. Confira a caixa de entrada e o spam.' }
+    : { t:'warn', m: envio.erro };
+  nuvemRedraw();
+}
+async function nuvemVerificar(){
+  await nuvemAtualizarEstado();
+  CLOUD_MSG = { t:'info', m: CLOUD_APROVACAO === 'aprovado' ? 'E-mail verificado e conta aprovada.' : (CLOUD_APROVACAO === 'nao-verificado' ? 'Ainda não consta como verificado. Abra o link do e-mail e tente de novo.' : 'Verificação atualizada.') };
+  nuvemRedraw();
+}
+
+/* --- progresso: snapshot local, mesclagem e aplicação (funções puras) --- */
+function localProgress(){
+  var marks = {}, quiz = {}, rev = {};
+  DATA.topics.forEach(function(t){
+    t.cards.forEach(function(_, i){
+      var k = t.id + ':' + i, v = getMark(t.id, i), at = tsGet('m:' + k);
+      if (v) marks[k] = { v:v, at:at };
+      else if (at) marks[k] = { v:'', at:at }; // tombstone: item limpo de propósito
+    });
+    t.quiz.forEach(function(_, i){
+      var k = t.id + ':' + i, a = getQuizAns(t.id, i), at = tsGet('q:' + k);
+      if (a !== null) quiz[k] = { v:a, at:at };
+      else if (at) quiz[k] = { v:-1, at:at };
+    });
+    var r = LS.get(SKEY + ':rev:' + t.id);
+    if (r) rev[t.id] = +r;
+  });
+  return { v:CLOUD_SCHEMA, fp:DATA.fp, chash:DATA.chash, updatedAt:0, marks:marks, quiz:quiz, rev:rev };
+}
+function mergeEntryMap(local, cloud){
+  var out = {}, vistos = {};
+  function put(k){
+    if (vistos[k]) return; vistos[k] = 1;
+    var a = local && local[k], b = cloud && cloud[k];
+    if (!a) out[k] = b;
+    else if (!b) out[k] = a;
+    else out[k] = (+b.at || 0) > (+a.at || 0) ? b : a; // empate: prefere o local
+  }
+  if (local) Object.keys(local).forEach(put);
+  if (cloud) Object.keys(cloud).forEach(put);
+  return out;
+}
+function mergeRev(local, cloud){
+  var out = {}, vistos = {};
+  function put(k){ if (vistos[k]) return; vistos[k] = 1; out[k] = Math.max(+((local||{})[k]) || 0, +((cloud||{})[k]) || 0); }
+  Object.keys(local || {}).forEach(put);
+  Object.keys(cloud || {}).forEach(put);
+  return out;
+}
+function mergeProgress(local, cloud){
+  return {
+    v: CLOUD_SCHEMA, fp: DATA.fp, chash: DATA.chash,
+    updatedAt: Math.max(+(local && local.updatedAt) || 0, +(cloud && cloud.updatedAt) || 0),
+    marks: mergeEntryMap(local && local.marks, cloud && cloud.marks),
+    quiz: mergeEntryMap(local && local.quiz, cloud && cloud.quiz),
+    rev: mergeRev(local && local.rev, cloud && cloud.rev)
+  };
+}
+function normalizarNuvem(raw){
+  if (!raw || typeof raw !== 'object') return null;
+  var out = { v: CLOUD_SCHEMA, fp: raw.fp, chash: raw.chash, updatedAt: +raw.updatedAt || 0, marks: {}, quiz: {}, rev: {} };
+  if (raw.marks && typeof raw.marks === 'object') Object.keys(raw.marks).forEach(function(k){
+    var e = raw.marks[k]; if (e && typeof e.v === 'string') out.marks[k] = { v:e.v, at:+e.at || 0 };
+  });
+  if (raw.quiz && typeof raw.quiz === 'object') Object.keys(raw.quiz).forEach(function(k){
+    var e = raw.quiz[k]; if (e && typeof e.v === 'number') out.quiz[k] = { v:e.v, at:+e.at || 0 };
+  });
+  if (raw.rev && typeof raw.rev === 'object') Object.keys(raw.rev).forEach(function(k){
+    var n = +raw.rev[k]; if (n) out.rev[k] = n;
+  });
+  return out;
+}
+function aplicarProgressoNuvem(p){
+  Object.keys(p.marks || {}).forEach(function(k){
+    var e = p.marks[k], c = k.split(':'), tid = c[0], idx = +c[1];
+    var t = DATA.topics.find(function(x){ return x.id === tid; });
+    if (!t || !(idx >= 0) || idx >= t.cards.length) return;
+    if (e.v) setMarkRaw(tid, idx, e.v); else LS.del(SKEY + ':' + tid + ':' + idx);
+    tsSet('m:' + k, +e.at || 0);
+  });
+  Object.keys(p.quiz || {}).forEach(function(k){
+    var e = p.quiz[k], c = k.split(':'), tid = c[0], idx = +c[1];
+    var t = DATA.topics.find(function(x){ return x.id === tid; });
+    if (!t || !(idx >= 0) || idx >= t.quiz.length) return;
+    if (e.v >= 0 && e.v < t.quiz[idx].a.length) setQuizAnsRaw(tid, idx, e.v);
+    else LS.del(SKEY + ':quiz:v3:' + tid + ':' + idx);
+    tsSet('q:' + k, +e.at || 0);
+  });
+  Object.keys(p.rev || {}).forEach(function(tid){
+    if (DATA.topics.some(function(x){ return x.id === tid; })) LS.set(SKEY + ':rev:' + tid, String(+p.rev[tid] || 0));
+  });
+}
+function contarProgresso(p){
+  var nm = 0, nq = 0;
+  Object.keys((p && p.marks) || {}).forEach(function(k){ if (p.marks[k].v) nm++; });
+  Object.keys((p && p.quiz) || {}).forEach(function(k){ if (p.quiz[k].v >= 0) nq++; });
+  return { marcas:nm, quiz:nq };
+}
+function diffProgresso(a, b){
+  var n = 0;
+  function cmp(x, y){
+    var vistos = {};
+    Object.keys(x || {}).concat(Object.keys(y || {})).forEach(function(k){
+      if (vistos[k]) return; vistos[k] = 1;
+      var xv = (x && x[k]) ? x[k].v : undefined, yv = (y && y[k]) ? y[k].v : undefined;
+      if (xv !== yv) n++;
+    });
+  }
+  cmp(a && a.marks, b && b.marks); cmp(a && a.quiz, b && b.quiz);
+  return n;
+}
+function contaDiferente(){
+  var uid = LS.get(SKEY + ':cloud:uid');
+  return !!(uid && CLOUD_USER && uid !== CLOUD_USER.uid);
+}
+function progressoLocalVazio(p){
+  var c = contarProgresso(p);
+  return !c.marcas && !c.quiz && !Object.keys((p && p.rev) || {}).length;
+}
+/* Substituição real do progresso local: limpa TODOS os itens conhecidos do
+   material (marcando tombstones recentes, para não ressuscitarem numa próxima
+   mesclagem) e só então aplica o da nuvem. É o que justifica a promessa do
+   botão "Baixar da nuvem". */
+function substituirProgressoLocal(p){
+  var agora = Date.now();
+  DATA.topics.forEach(function(t){
+    t.cards.forEach(function(_, i){ LS.del(SKEY + ':' + t.id + ':' + i); tsSet('m:' + t.id + ':' + i, agora); });
+    t.quiz.forEach(function(_, i){ LS.del(SKEY + ':quiz:v3:' + t.id + ':' + i); tsSet('q:' + t.id + ':' + i, agora); });
+    LS.del(SKEY + ':rev:' + t.id);
+  });
+  aplicarProgressoNuvem(p);
+}
+function salvarBackupLocal(){ LS.set(SKEY + ':cloud:backup', JSON.stringify({ at: Date.now(), data: localProgress() })); }
+function temBackupLocal(){ return !!LS.get(SKEY + ':cloud:backup'); }
+
+/* --- leitura/escrita na nuvem --- */
+async function fbLerNuvem(){
+  var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+  var snap = await FB.fs.getDoc(ref);
+  return snap.exists() ? normalizarNuvem(snap.data()) : null;
+}
+async function fbGravarNuvem(p){
+  p.updatedAt = Date.now();
+  var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+  await FB.fs.setDoc(ref, p);
+}
+async function nuvemPronto(){
+  if (!await fbCarregar()){ CLOUD_MSG = { t:'err', m:FB.error || 'Nuvem indisponível.' }; nuvemRedraw(); return false; }
+  if (!CLOUD_USER) await nuvemAtualizarEstado();
+  if (!CLOUD_USER){ CLOUD_MSG = { t:'err', m:'Entre na sua conta primeiro.' }; nuvemRedraw(); return false; }
+  if (CLOUD_APROVACAO !== 'aprovado'){ CLOUD_MSG = { t:'err', m:'Sua conta ainda não está aprovada pelo admin.' }; nuvemRedraw(); return false; }
+  return true;
+}
+
+async function nuvemSincronizar(){
+  if (!await nuvemPronto()) return;
+  var marcador = LS.get(SKEY + ':cloud:uid');
+  // Trava de conta: vale mesmo quando a nuvem ainda está vazia. Sem isso, o
+  // progresso de A subiria para a conta B recém-criada.
+  if (marcador && marcador !== CLOUD_USER.uid){
+    CLOUD_MSG = { t:'err', m:'Este navegador guarda progresso associado a outra conta. Para não misturar, use "Enviar deste aparelho" (assume este progresso para a conta atual) ou "Baixar da nuvem" (substitui o local), de propósito.' };
+    nuvemRedraw(); return;
+  }
+  var local = localProgress();
+  // Sem marcador mas com progresso local: é o primeiro sync desta conta com
+  // dados que podem ser legado (ou de outra pessoa). Exige confirmação para
+  // associá-los; não sobe nada sozinho.
+  if (!marcador && !progressoLocalVazio(local)){
+    if (!confirm('Este navegador tem progresso local que ainda não foi associado a nenhuma conta. Sincronizar vai associá-lo à conta ' + CLOUD_USER.email + ' e combiná-lo com a nuvem. Continuar?')) return;
+  }
+  var merged, aviso = '';
+  try {
+    // Transação: lê o documento, mescla por item e grava atomicamente. Dois
+    // aparelhos sincronizando juntos não se sobrescrevem — o Firestore serializa
+    // e reexecuta a transação, e cada item resolve pelo carimbo de tempo.
+    merged = await FB.fs.runTransaction(FB.firestore, async function(tx){
+      var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+      var snap = await tx.get(ref);
+      var cloud = snap.exists() ? normalizarNuvem(snap.data()) : null;
+      if (cloud && (cloud.fp !== DATA.fp || cloud.chash !== DATA.chash)){
+        aviso = 'Atenção: o material mudou desde o progresso na nuvem; itens que não existem mais foram ignorados. ';
+      }
+      var m = mergeProgress(localProgress(), cloud || { marks:{}, quiz:{}, rev:{}, updatedAt:0 });
+      m.updatedAt = Date.now();
+      tx.set(ref, m);
+      return m;
+    });
+  } catch(e){
+    CLOUD_MSG = { t:'err', m:'Falha ao sincronizar; nada foi alterado neste navegador. ' + fbErro(e) };
+    nuvemRedraw(); return;
+  }
+  var mudou = diffProgresso(local, merged);
+  aplicarProgressoNuvem(merged); // só depois de a gravação ter dado certo
+  LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid);
+  var c = contarProgresso(merged);
+  CLOUD_ULTIMO_RESUMO = aviso + 'Sincronizado: ' + c.marcas + ' marcações e ' + c.quiz + ' respostas na nuvem' + (mudou ? ' (' + mudou + ' item(ns) atualizado(s) aqui).' : '.');
+  nuvemRedraw();
+}
+async function nuvemEnviar(){
+  if (!await nuvemPronto()) return;
+  var local = localProgress();
+  var aviso = contaDiferente() ? 'Atenção: este navegador guarda progresso de outra conta. ' : '';
+  if (!confirm(aviso + 'Enviar o progresso deste navegador para a nuvem da conta ' + CLOUD_USER.email + '? Isto substitui o que estiver na nuvem desta conta.')) return;
+  try { await fbGravarNuvem(local); LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid); }
+  catch(e){ CLOUD_MSG = { t:'err', m:'Falha ao enviar: ' + fbErro(e) }; nuvemRedraw(); return; }
+  var c = contarProgresso(local);
+  CLOUD_ULTIMO_RESUMO = 'Enviado: ' + c.marcas + ' marcações e ' + c.quiz + ' respostas.';
+  nuvemRedraw();
+}
+async function nuvemBaixar(){
+  if (!await nuvemPronto()) return;
+  var cloud;
+  try { cloud = await fbLerNuvem(); }
+  catch(e){ CLOUD_MSG = { t:'err', m:'Não consegui ler a nuvem: ' + fbErro(e) }; nuvemRedraw(); return; }
+  if (!cloud){ CLOUD_MSG = { t:'info', m:'Ainda não há progresso na nuvem para esta conta.' }; nuvemRedraw(); return; }
+  var aviso = (cloud.fp !== DATA.fp || cloud.chash !== DATA.chash) ? 'Atenção: o material mudou desde este backup. ' : '';
+  if (!confirm(aviso + 'Baixar da nuvem SUBSTITUI o progresso deste navegador pelo da conta ' + CLOUD_USER.email + ' (um backup local fica guardado para desfazer). Continuar?')) return;
+  salvarBackupLocal();
+  substituirProgressoLocal(cloud);
+  LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid);
+  var c = contarProgresso(cloud);
+  CLOUD_ULTIMO_RESUMO = 'Baixado: ' + c.marcas + ' marcações e ' + c.quiz + ' respostas. O progresso anterior deste navegador foi guardado — use "Desfazer último Baixar" se precisar.';
+  nuvemRedraw();
+}
+function nuvemRestaurarBackup(){
+  var raw = LS.get(SKEY + ':cloud:backup');
+  if (!raw){ CLOUD_MSG = { t:'err', m:'Não há backup local para restaurar.' }; nuvemRedraw(); return; }
+  var obj;
+  try { obj = JSON.parse(raw); } catch(e){ obj = null; }
+  if (!obj || !obj.data){ LS.del(SKEY + ':cloud:backup'); CLOUD_MSG = { t:'err', m:'O backup local estava corrompido e foi descartado.' }; nuvemRedraw(); return; }
+  if (!confirm('Restaurar o progresso local de antes do último "Baixar da nuvem"? Isto substitui o progresso atual deste navegador.')) return;
+  substituirProgressoLocal(normalizarNuvem(obj.data) || { marks:{}, quiz:{}, rev:{} });
+  LS.del(SKEY + ':cloud:backup');
+  CLOUD_ULTIMO_RESUMO = 'Progresso anterior restaurado.';
+  nuvemRedraw();
+}
+
+/* --- tela --- */
+function painelSync(resumo){
+  var loc = localProgress(), c = contarProgresso(loc);
+  var h = '<div class="sync-box"><h3>Manter em dia</h3>' +
+    '<p>Neste navegador: <strong>' + c.marcas + '</strong> marcações e <strong>' + c.quiz + '</strong> respostas de quiz.</p>' +
+    '<p><strong>Sincronizar</strong> mescla os dois lados: para cada item vale a versão mais recente, e a gravação é atômica (transação) — dois aparelhos juntos não se sobrescrevem. Nada é apagado por ser mais antigo, e o progresso local nunca é trocado sozinho pelo de outra conta.</p>' +
+    '<button class="btn" onclick="nuvemSincronizar()">↻ Sincronizar (mesclar)</button>' +
+    '<button class="btn ghost" onclick="nuvemEnviar()">⬆️ Enviar deste aparelho</button>' +
+    '<button class="btn ghost" onclick="nuvemBaixar()">⬇️ Baixar da nuvem</button>' +
+    (temBackupLocal() ? '<button class="btn ghost" onclick="nuvemRestaurarBackup()">↩️ Desfazer último Baixar</button>' : '');
+  if (resumo) h += '<div class="note ok">' + escHtml(resumo) + '</div>';
+  return h + '</div>';
+}
+function renderNuvem(){
+  renderSidebar('nuvem');
+  document.getElementById('tbTitle').textContent = 'Progresso na nuvem';
+  nuvemAgendarBoot();
+  var resumo = CLOUD_ULTIMO_RESUMO; CLOUD_ULTIMO_RESUMO = null;
+  var h = '<div class="topic-head"><h1>☁️ Progresso na nuvem</h1>' +
+    '<p class="sub">Opcional: leve o progresso entre aparelhos com uma conta. Sem isso, tudo continua funcionando offline, só neste navegador.</p></div>';
+  if (CLOUD_MSG){ h += '<div class="note ' + (CLOUD_MSG.t === 'ok' ? 'ok' : CLOUD_MSG.t === 'err' ? 'err' : CLOUD_MSG.t === 'warn' ? 'warn' : '') + '">' + escHtml(CLOUD_MSG.m) + '</div>'; CLOUD_MSG = null; }
+  if (!fbConfigurado()){
+    h += '<div class="sync-box"><h3>Nuvem não configurada</h3>' +
+      '<p>Este site não tem <code>firebase-config.json</code>, então o recurso de nuvem está desligado. Nada quebra: o progresso segue salvo apenas no navegador.</p>' +
+      '<p>Quem publica pode ativar seguindo o manual no <code>README.md</code>: criar o projeto Firebase, colar as regras de <code>firestore.rules</code> no console e rodar o build. A config do app web é pública — a segurança vem das regras, não de esconder o arquivo.</p>' +
+      '<p><strong>⚠️ Nunca</strong> coloque aqui credencial de administrador (service account, <code>private_key</code>): o build recusa.</p></div>';
+  } else if (!FB.loaded){
+    h += '<div class="sync-box"><h3>Carregando a nuvem…</h3><p>' + escHtml(FB.error || 'Conectando ao Firebase.') + '</p>' +
+      '<p>O material funciona normalmente sem a nuvem; quando houver conexão, tente de novo.</p>' +
+      '<button class="btn ghost" onclick="nuvemRetentar()">↻ Tentar de novo</button></div>';
+  } else if (!CLOUD_USER){
+    h += '<div class="sync-box"><h3>Entrar</h3>' +
+      '<p>Uma conta por pessoa. O cadastro pode estar aberto tecnicamente, mas o <strong>acesso ao progresso</strong> só é liberado quando o admin aprova a conta. Sem aprovação, não há leitura nem escrita na nuvem.</p>' +
+      '<div class="conta"><input id="nvEmail" type="email" placeholder="e-mail" autocomplete="email">' +
+      '<input id="nvSenha" type="password" placeholder="senha (mín. 6)" autocomplete="current-password"></div>' +
+      '<button class="btn" onclick="nuvemEntrar()">Entrar</button>' +
+      '<button class="btn ghost" onclick="nuvemRegistrar()">Criar conta</button>' +
+      '<p style="font-size:.85em;color:var(--muted)">Ao criar a conta, envio um e-mail de verificação. Depois de confirmar, aguarde a aprovação do admin.</p></div>';
+  } else {
+    var email = escHtml(CLOUD_USER.email || '(sem e-mail)');
+    var estado = CLOUD_APROVACAO === 'aprovado' ? '<span class="tag ok">✅ aprovado</span>' :
+      CLOUD_APROVACAO === 'pendente' ? '<span class="tag pend">⏳ aguardando aprovação</span>' :
+      CLOUD_APROVACAO === 'carregando' ? '<span class="tag">… verificando</span>' :
+      CLOUD_APROVACAO === 'offline' ? '<span class="tag warn">📴 sem conexão</span>' :
+      CLOUD_APROVACAO === 'nao-verificado' ? '<span class="tag warn">✉️ e-mail não verificado</span>' :
+      '<span class="tag warn">— estado desconhecido</span>';
+    h += '<div class="sync-box"><h3>Conta</h3>' +
+      '<p><strong>' + email + '</strong><br>' + estado +
+      (CLOUD_USER.emailVerified ? '<span class="tag ok">e-mail verificado</span>' : '<span class="tag warn">e-mail não verificado</span>') + '</p>';
+    if (!CLOUD_USER.emailVerified){
+      var rest = reenvioRestante();
+      h += '<button class="btn" onclick="nuvemReenviar()"' + (rest ? ' disabled' : '') + '>Reenviar e-mail de verificação' + (rest ? ' (aguarde ' + rest + 's)' : '') + '</button>' +
+        '<button class="btn ghost" onclick="nuvemVerificar()">Já verifiquei</button>';
+    } else if (CLOUD_APROVACAO === 'pendente'){
+      h += '<p>Peça ao admin para aprovar sua conta: ele cria o documento <code>acessos/' + escHtml(CLOUD_USER.uid) + '</code> no console do Firestore. Até lá, seu progresso continua salvo localmente.</p>' +
+        '<button class="btn ghost" onclick="nuvemVerificar()">Já fui aprovado</button>';
+    } else if (CLOUD_APROVACAO === 'offline' || CLOUD_APROVACAO === 'erro'){
+      h += '<button class="btn ghost" onclick="nuvemVerificar()">Tentar verificar de novo</button>';
+    }
+    h += '<button class="btn ghost" onclick="nuvemSair()">Sair</button></div>';
+    if (CLOUD_APROVACAO === 'aprovado') h += painelSync(resumo);
+    if (contaDiferente()) h += '<div class="note err">⚠️ Este navegador tem progresso associado a outra conta. Nada foi trocado automaticamente: escolha com cuidado entre enviar ou baixar.</div>';
+  }
   document.getElementById('main').innerHTML = h;
   window.scrollTo(0,0);
-}
-function copyText(txt, btn){
-  var done = function(){ document.getElementById('copyNote').innerHTML = '<div class="note ok">✅ Copiado! Agora é só colar no outro aparelho.</div>'; };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt, done); });
-  } else fallbackCopy(txt, done);
-}
-function fallbackCopy(txt, done){
-  var ta = document.getElementById('expLink');
-  ta.select(); ta.setSelectionRange(0, 99999);
-  try { document.execCommand('copy'); done(); }
-  catch (e) { document.getElementById('copyNote').innerHTML = '<div class="note err">Não consegui copiar automaticamente — selecione o texto acima e copie manualmente.</div>'; }
-}
-function downloadBackup(){
-  var payload = { v: 1, site: DATA.siteKey, code: encodeProgress() };
-  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'progresso-' + DATA.siteKey + '.json';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
-}
-function doImport(){
-  var raw = document.getElementById('impCode').value.trim();
-  var note = document.getElementById('impNote');
-  if (!raw){ note.innerHTML = '<div class="note err">Cole o link, o código ou o backup primeiro.</div>'; return; }
-  var ex = extrairCodigo(raw);
-  if (ex.error){ note.innerHTML = '<div class="note err">' + ex.error + '</div>'; return; }
-  var p = decodeProgress(ex.code);
-  if (p.error){ note.innerHTML = '<div class="note err">' + p.error + '</div>'; return; }
-  var aviso = avisoVersao(p);
-  if (ex.site && ex.site !== DATA.siteKey) aviso += '\\n\\nATENÇÃO: este backup é de "' + ex.site + '", não de "' + DATA.siteKey + '".';
-  if (!confirm('Importar ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz?\\n\\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) return;
-  applyProgress(p);
-  note.innerHTML = '<div class="note ok">✅ Progresso importado! ' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas restauradas.' +
-    (p.invalidas ? ' ' + p.invalidas + ' resposta(s) inválida(s) foram ignoradas.' : '') + '</div>';
-  renderSidebar('sync');
 }
 
 /* ---------- simulado ----------
@@ -2131,7 +2539,10 @@ function route(){
     window.scrollTo(0, 0);
     aplicarFoco();
   } else if (hash === '#sync'){
-    renderSync();
+    location.replace(location.pathname + location.search.replace(/([?&])p=[^&]*/g, '$1').replace(/[?&]$/, '') + '#nuvem');
+    return;
+  } else if (hash === '#nuvem'){
+    renderNuvem();
   } else if (hash === '#simulado'){
     renderSimulado();
   } else if (hash === '#revisar'){
@@ -2144,18 +2555,14 @@ function route(){
 }
 window.addEventListener('hashchange', route);
 
-/* Importa progresso vindo por link (?p=...) antes de desenhar a tela. */
+/* Links antigos ?p= carregavam progresso no aparelho ao abrir. Agora apenas
+   removemos o parâmetro e mostramos a tela de nuvem: nenhum dado é importado,
+   sobrescrito ou apagado. */
 (function(){
-  var m = location.search.match(/[?&]p=([A-Za-z0-9_-]+)/);
-  if (m){
-    var p = decodeProgress(m[1]);
-    if (!p.error){
-      var aviso = avisoVersao(p);
-      if (confirm('Importar progresso deste link?\\n\\n' + p.nMarks + ' marcações e ' + p.nQuiz + ' respostas de quiz.\\nIsto substitui o progresso deste aparelho.' + aviso + notaInvalidas(p))) {
-        applyProgress(p);
-      }
-    }
-    history.replaceState(null, '', location.pathname + location.hash);
+  if (/[?&]p=[A-Za-z0-9_-]+/.test(location.search)) {
+    var clean = location.search.replace(/([?&])p=[^&]*/g, '$1').replace(/[?&]$/, '');
+    history.replaceState(null, '', location.pathname + clean + '#nuvem');
+    window.setTimeout(function(){ alert('Este link usava a transferência antiga de progresso, que foi desativada. Nada foi importado ou alterado. Seu progresso local permanece neste aparelho; use a sincronização na nuvem com uma conta aprovada.'); }, 0);
   }
   route();
 })();
