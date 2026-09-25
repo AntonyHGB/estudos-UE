@@ -124,7 +124,7 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 ### Como ligar (mantenedor)
 
 1. Crie um projeto Firebase (plano **Spark**, gratuito), registre um app **Web** e copie a config pública.
-2. Em **Authentication → Sign-in method**, ative **E-mail/senha**. Opcional: exija verificação de e-mail (o site já oferece "Reenviar verificação").
+2. Em **Authentication → Sign-in method**, ative **E-mail/senha**. Exija verificação de e-mail e habilite **Email enumeration protection** nas configurações do Authentication. As mensagens do cliente são genéricas para credenciais inválidas, mas não substituem essa proteção do servidor. Configure também uma política de senha adequada ao público.
 3. Em **Firestore Database**, crie o banco e cole o conteúdo de [`firestore.rules`](firestore.rules) em **Regras**.
 4. Copie `firebase-config.example.json` para `firebase-config.json` na raiz e preencha com a config do seu app.
 5. `node build-site.mjs` e publique. A config pública fica embutida no HTML gerado (rode o build antes de commitar; o CI cobra isso).
@@ -138,6 +138,8 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 - **Sincronizar** faz leitura + mesclagem + gravação **dentro de uma transação** do Firestore e só aplica o resultado neste navegador **depois** de a gravação ter dado certo. Para cada marcação/resposta vence o carimbo de tempo mais recente; empate prefere o **local**. Como a transação serializa, dois aparelhos sincronizando ao mesmo tempo não se sobrescrevem: o segundo reexecuta a leitura e mescla sobre o resultado do primeiro.
 - **Enviar** sobrescreve a nuvem com o progresso local (explícito). **Baixar** **substitui** o local pelo da nuvem — limpa os itens conhecidos antes de aplicar — e guarda um backup local que aparece como "↩️ Desfazer último Baixar".
 - **Trocar de conta no mesmo navegador não mistura dados automaticamente.** Se já houver um marcador de conta diferente, o "Sincronizar" é bloqueado (mesmo com a nuvem ainda vazia); e, se não houver marcador mas existir progresso local, o primeiro sync pede confirmação para associá-lo à conta.
+- O Auth é inicializado no boot, antes de liberar a tela de estudo, para escolher o namespace correto: sessão autenticada usa chave local por UID; sessão deslogada mantém o namespace legado. Os dados legados não são apagados nem associados automaticamente. Para acessá-los, saia da conta; não há migração automática nem fluxo de cópia implementado. Backups novos guardam UID; backups antigos sem UID falham fechado e são preservados, mas não podem ser restaurados pela interface.
+- Se a inicialização Firebase falhar, o app mostra aviso de estado offline/desconhecido, preserva o legado e usa um namespace isolado de contingência. Não associa dados desse modo a nenhuma conta; ao voltar online, recarregue para identificar a sessão.
 - Marcações limpas viram *tombstones* com carimbo, então uma limpeza feita em um aparelho também some no outro.
 - Se o material mudou (`fp`/`chash`), itens que não existem mais são ignorados e a tela avisa.
 
