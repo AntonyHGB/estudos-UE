@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// ============================================================================
+// Progresso na nuvem — modelo de segurança (Cloud Firestore)
+// ============================================================================
+// Cole este arquivo em Firestore → Regras, no console do Firebase.
+//
+// Princípios:
+//   - Negar tudo por padrão (a regra curinga no fim não libera nada).
+//   - Cada usuário lê/escreve SOMENTE o próprio progresso, por área.
+//   - O acesso exige e-mail verificado E aprovação manual do admin.
+//   - A aprovação é um documento em `acessos/{uid}` criado à mão pelo admin no
+//     console (ou pelo Admin SDK). O console ignora estas regras, então o admin
+//     não precisa de outra permissão.
+//   - O signup do Firebase Auth pode continuar aberto: quem se cadastra NÃO
+//     consegue ler nem escrever nada sem o documento de aprovação. É a
+//     aprovação — não o "convite" — que libera o acesso.
+//
+// Aviso: um usuário não aprovado ainda consegue *criar* a própria conta no
+// Auth (o cadastro por e-mail/senha pode ficar aberto). Desligar o provedor
+// "E-mail/senha" em Authentication NÃO fecha só o cadastro: derruba também o
+// login de todo mundo. Para bloquear novos cadastros mantendo o login, é
+// preciso outro mecanismo (ex.: apagar periodicamente contas não aprovadas, ou
+// uma Cloud Function de bloqueio de signup) — fora do escopo do plano Spark.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function emailVerificado() {
+      return autenticado() && request.auth.token.email_verified == true;
+    }
+
+    function aprovado(uid) {
+      return emailVerificado()
+        && exists(/databases/$(database)/documents/acessos/$(uid))
+        && get(/databases/$(database)/documents/acessos/$(uid)).data.aprovado == true;
+    }
+
+    // Allowlist de acesso. O admin cria/remove; o próprio usuário só pode
+    // ler o próprio documento (para o site saber se já foi aprovado).
+    match /acessos/{uid} {
+      allow read: if emailVerificado() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Progresso: uma área por documento. Só o dono, aprovado e verificado.
+    match /usuarios/{uid}/areas/{area} {
+      allow read, write: if aprovado(uid) && request.auth.uid == uid;
+    }
+
+    // Default-deny explícito para todo o resto.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

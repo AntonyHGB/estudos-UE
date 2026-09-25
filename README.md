@@ -23,7 +23,7 @@ Na raiz, um `index.html` é o hub que leva à área.
 
 1. **A verdade está nos fontes.** Conteúdo e gabaritos vivem nos `NN-*.md` e no `quiz.json`; os HTML/JS gerados são descartáveis.
 2. **Mudou algo? Rode `node build-site.mjs`** e commite também o resultado gerado — o CI falha se o arquivo commitado divergir da fonte.
-3. **Nada de material sigiloso no repositório.** `documentos-fontes/` (PDFs, imagens e anotações de aula), `_fontes-extraidas/`, `_quiz-fragmentos/`, `_modelo-referencia/` e notas internas ficam fora do versionamento. O que for publicado no GitHub Pages é só o site.
+3. **Nada de material sigiloso no repositório.** `documentos-fontes/` (PDFs, imagens e anotações de aula), `_fontes-extraidas/`, `_quiz-fragmentos/`, `_modelo-referencia/` e notas internas ficam fora do versionamento. O que for publicado no GitHub Pages é só o site. Exceção intencional: `firebase-config.json` contém apenas a config **pública** do app web e precisa ficar no HTML publicado para o site funcionar — nunca coloque credencial de administrador nele (o build recusa).
 4. **Quiz bem desenhado:**
    - quatro alternativas, com **~10% de diferença de comprimento** entre elas; a auditoria avisa acima de 15% e o build falha acima de 30% — se a correta ficou longa, corte; o que não cabe pertence à explicação;
    - a correta **não pode ser sistematicamente a mais longa** (aviso acima de 35% das questões, o build falha acima de 45%; com quatro alternativas o acaso é 25%) — ser a mais longa de vez em quando não é problema;
@@ -105,11 +105,59 @@ Antes de gerar, o build também valida a integridade do banco: a raiz do `quiz.j
 
 ## Progresso
 
-Marcações e respostas ficam no `localStorage` do navegador — por aparelho. Para levar o progresso de um aparelho a outro, use a tela **📲 Levar progresso** dentro do site.
+Marcações e respostas ficam no `localStorage` do navegador — por aparelho — e continuam disponíveis offline. Para sincronizar entre aparelhos, use **☁️ Progresso na nuvem** com uma conta verificada e aprovada pelo admin.
 
-O link, o código e o backup baixado (`progresso-<área>.json`, no formato `{v, site, code}`) carregam uma **versão do material**: impressão digital do layout (temas e contagens) e hash do conteúdo das questões. Se um tema for reordenado, reescrito ou removido, a importação avisa em vez de colar respostas antigas em questões novas. Respostas de quiz apontando para uma alternativa fora do intervalo da questão são ignoradas com aviso. O arquivo de backup pode ser colado direto no campo de importação — o site extrai o `code` do JSON.
+Links antigos com `?p=` não importam mais progresso; ao abri-los, o site avisa e encaminha à tela de nuvem. Nada é alterado no navegador por esse aviso. O progresso local e os documentos existentes na nuvem são preservados.
 
-Aberta direto do disco (`file://`), a tela mostra apenas o código, sem link: links de compartilhamento não funcionam nesse modo. Copie o código e cole-o no campo de importação do outro aparelho.
+## Progresso na nuvem (opcional)
+
+O progresso continua **local-first**: sem configurar nada, tudo funciona como hoje, offline e por aparelho. A nuvem é um recurso opcional para levar o progresso entre aparelhos, e é ligada por quem publica o site. Enquanto não houver `firebase-config.json`, a aba **☁️ Progresso na nuvem** só explica que o recurso está desligado — nada quebra, nada vai à rede.
+
+### Modelo de segurança
+
+- **A config do app web não é segredo.** `apiKey`, `projectId` etc. identificam o projeto; o controle está nas **regras do Firestore** e na aprovação. Nunca coloque credencial de administrador (service account, `private_key`, `client_email`) — o build **recusa** o arquivo se detectar esses campos.
+- **Negar por padrão.** `firestore.rules` não libera nada fora do próprio progresso do usuário.
+- **Cada um só o seu.** Regras prendem leitura/escrita ao `request.auth.uid` e exigem e-mail verificado.
+- **Aprovação manual.** Só quem tem um documento `acessos/{uid}` com `aprovado: true`, criado pelo admin no console, acessa a nuvem. O cadastro no Auth pode continuar aberto: sem aprovação, ninguém lê nem escreve nada. ⚠️ Isso é o gate efetivo — **não** desligue o provedor "E-mail/senha" para "fechar o cadastro": isso derruba também o login de todos. Para bloquear novos cadastros mantendo o login seria preciso outro mecanismo (apagar contas não aprovadas ou uma Cloud Function de bloqueio), fora do plano Spark.
+- **Sem "convite" ilusório.** A tela deixa claro que o cadastro pode estar aberto e que o gate é a aprovação.
+
+### Como ligar (mantenedor)
+
+1. Crie um projeto Firebase (plano **Spark**, gratuito), registre um app **Web** e copie a config pública.
+2. Em **Authentication → Sign-in method**, ative **E-mail/senha**. Opcional: exija verificação de e-mail (o site já oferece "Reenviar verificação").
+3. Em **Firestore Database**, crie o banco e cole o conteúdo de [`firestore.rules`](firestore.rules) em **Regras**.
+4. Copie `firebase-config.example.json` para `firebase-config.json` na raiz e preencha com a config do seu app.
+5. `node build-site.mjs` e publique. A config pública fica embutida no HTML gerado (rode o build antes de commitar; o CI cobra isso).
+6. Para liberar cada pessoa: depois que ela se cadastrar e verificar o e-mail, crie em **Firestore → `acessos`** um documento com **ID = UID do usuário** e campo `aprovado` (booleano) = `true`. Para revogar, apague o documento.
+
+⚠️ As regras usam `get()`/`exists()`; a aprovação vale para todas as áreas daquele UID. O progresso fica em `usuarios/{uid}/areas/{area}` — uma área nova (`SITES`) já entra sozinha.
+
+### Como o sync se comporta
+
+- O SDK do Firebase é carregado **só quando você abre a aba Nuvem** (`import()` do CDN oficial). Offline, `file://` ou CDN indisponível: o recurso degrada e o estudo local segue normal.
+- **Sincronizar** faz leitura + mesclagem + gravação **dentro de uma transação** do Firestore e só aplica o resultado neste navegador **depois** de a gravação ter dado certo. Para cada marcação/resposta vence o carimbo de tempo mais recente; empate prefere o **local**. Como a transação serializa, dois aparelhos sincronizando ao mesmo tempo não se sobrescrevem: o segundo reexecuta a leitura e mescla sobre o resultado do primeiro.
+- **Enviar** sobrescreve a nuvem com o progresso local (explícito). **Baixar** **substitui** o local pelo da nuvem — limpa os itens conhecidos antes de aplicar — e guarda um backup local que aparece como "↩️ Desfazer último Baixar".
+- **Trocar de conta no mesmo navegador não mistura dados automaticamente.** Se já houver um marcador de conta diferente, o "Sincronizar" é bloqueado (mesmo com a nuvem ainda vazia); e, se não houver marcador mas existir progresso local, o primeiro sync pede confirmação para associá-lo à conta.
+- Marcações limpas viram *tombstones* com carimbo, então uma limpeza feita em um aparelho também some no outro.
+- Se o material mudou (`fp`/`chash`), itens que não existem mais são ignorados e a tela avisa.
+
+**Limites conhecidos.** A granularidade do conflito é o item (marcação/resposta), decidido pelo carimbo de tempo: relógios muito fora de sincronia entre aparelhos podem inverter a ordem de dois itens. Se duas pessoas usarem o **mesmo navegador** e ambas tiverem progresso local não sincronizado, a confirmação do primeiro sync decide a quem ele pertence — não há como o site adivinhar. E "Enviar" é uma sobrescrita deliberada: usado em dois aparelhos quase ao mesmo tempo, vale a última gravação.
+
+### Testes
+
+```bash
+node build-site.mjs && node testes/nuvem.mjs
+```
+
+`testes/nuvem.mjs` roda o `index.html` gerado num contexto Node com DOM/localStorage mockados e cobre snapshot, mesclagem por timestamp, aplicação com validação de índices, bloqueio de troca de conta e as regras default-deny. Testes que dependem de rede/CDN e de duas contas reais ficam no roteiro manual abaixo.
+
+### Roteiro manual (2 contas)
+
+1. Conta **pendente**: cadastre-se, verifique o e-mail, abra a aba Nuvem → deve mostrar "aguardando aprovação" e não sincronizar.
+2. Conta **aprovada**: o admin cria `acessos/{uid}`; a tela muda para "aprovado" e libera os botões.
+3. Estude um pouco no aparelho A, sincronize; no aparelho B (mesmo UID) sincronize e confirme que o progresso aparece, sem perder o do B.
+4. Sem internet: confirme que o estudo offline segue e que a aba Nuvem só informa a falha.
+5. Troque de conta no mesmo navegador: confirme que o progresso local anterior **não** é substituído automaticamente.
 
 ## Publicar
 
