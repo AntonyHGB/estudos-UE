@@ -31,6 +31,9 @@ const els = new Map();
 function makeEl(id) {
   return {
     id, textContent: '', innerHTML: '', value: '',
+    type: '', attributes: {}, focused: false,
+    setAttribute(k, v) { this.attributes[k] = String(v); },
+    focus() { this.focused = true; },
     classList: { add() {}, remove() {}, contains() { return false; }, toggle() {} },
     style: {}, dataset: {},
     addEventListener() {}, removeEventListener() {},
@@ -74,6 +77,7 @@ run(appJs, { filename: 'app.js' });
 let passed = 0, failed = 0;
 function test(nome, fn) {
   store.clear();
+  run('usarProgressoUid(null)');
   try { fn(); console.log(`  ok  ${nome}`); passed++; }
   catch (e) { console.log(`  FAIL ${nome}\n       ${e.message}`); failed++; }
 }
@@ -81,6 +85,30 @@ const ev = (code) => run(code);
 const evj = (code) => JSON.parse(run('JSON.stringify(' + code + ')'));
 
 console.log(`testes/nuvem.mjs: ${file}`);
+
+test('alternância de senha preserva valor e foco e atualiza estado acessível', () => {
+  const campo = document.getElementById('nvSenha');
+  const botao = makeEl('toggle-senha');
+  campo.type = 'password';
+  campo.value = 'nao-exibir';
+  // Usa o mesmo handler com botão controlado pelo mock do DOM.
+  els.set('teste-botao', botao);
+  campo.focused = false;
+  run('nuvemAlternarSenha(document.getElementById("teste-botao"))');
+  assert.equal(campo.type, 'text');
+  assert.equal(campo.value, 'nao-exibir');
+  assert.equal(campo.focused, true);
+  assert.equal(botao.attributes['aria-pressed'], 'true');
+  assert.equal(botao.attributes['aria-label'], 'Ocultar senha');
+  campo.focused = false;
+  run('nuvemAlternarSenha(document.getElementById("teste-botao"))');
+  assert.equal(campo.type, 'password');
+  assert.equal(botao.attributes['aria-pressed'], 'false');
+  assert.equal(botao.attributes['aria-label'], 'Mostrar senha');
+  assert.equal(botao.textContent, 'Mostrar');
+  assert.equal(campo.focused, true);
+  assert.match(appJs, /type="button" aria-label="Mostrar senha" aria-pressed="false"/);
+});
 
 /* ---------- 1. estado da nuvem acompanha a config embutida ---------- */
 const firebaseConfigPath = fileURLToPath(new URL('../firebase-config.json', import.meta.url));
@@ -250,7 +278,7 @@ test('firestore.rules nega por padrão e prende o acesso ao UID aprovado', () =>
    Exercitam nuvemSincronizar / nuvemBaixar, não só as funções puras.
    ========================================================================== */
 function mockCloud(initial) {
-  const state = { cloud: initial ?? null, txCalls: 0, writes: 0, failTx: false };
+  const state = { cloud: initial ?? null, txCalls: 0, writes: 0, txSets: 0, failTx: false };
   globalThis.FB.loaded = true;
   globalThis.FB.firestore = {};
   globalThis.FB.fs = {
@@ -262,7 +290,7 @@ function mockCloud(initial) {
       if (state.failTx) throw Object.assign(new Error('tx'), { code: 'unavailable' });
       const tx = {
         get: async () => ({ exists: () => state.cloud != null, data: () => state.cloud }),
-        set: (_ref, p) => { state.cloud = p; },
+        set: (_ref, p) => { state.txSets++; state.cloud = p; },
       };
       return await cb(tx);
     },
@@ -270,12 +298,18 @@ function mockCloud(initial) {
   globalThis.FB.auth = {
     currentUser: { uid: 'B', email: 'b@exemplo.test', emailVerified: true, reload: async () => {}, getIdToken: async () => {} },
   };
-  run('CLOUD_USER = FB.auth.currentUser; CLOUD_APROVACAO = "aprovado"; CLOUD_MSG = null; FB.error = "";');
+  run('AUTH_EPOCH++; CLOUD_USER = FB.auth.currentUser; CLOUD_APROVACAO = "aprovado"; CLOUD_MSG = null; FB.error = "";');
   return state;
+}
+function deferred(){
+  let resolve, reject;
+  const promise = new Promise((a,b) => { resolve = a; reject = b; });
+  return { promise, resolve, reject };
 }
 
 async function atest(nome, fn) {
   store.clear();
+  run('usarProgressoUid(null)');
   try { await fn(); console.log(`  ok  ${nome}`); passed++; }
   catch (e) { console.log(`  FAIL ${nome}\n       ${e.message}`); failed++; }
 }
@@ -292,16 +326,17 @@ await atest('nuvemSincronizar bloqueia progresso de outra conta MESMO com a nuve
 });
 
 await atest('sem marcador, primeiro sync com progresso local pede confirmação', async () => {
+  run("usarProgressoUid('B')");
   ev(`setMark(${JSON.stringify(TID)}, 0, 'ok')`);
   const st = mockCloud(null);
   confirmResult = false;
   await run('nuvemSincronizar()');
   assert.equal(st.cloud, null, 'sem confirmação não sobe nada');
-  assert.equal(LS.get(SKEY + ':cloud:uid'), null, 'marcador não é gravado sem confirmação');
+  assert.equal(LS.get(ev('SKEY') + ':cloud:uid'), null, 'marcador não é gravado sem confirmação');
   confirmResult = true;
   await run('nuvemSincronizar()');
   assert.ok(st.cloud, 'com confirmação, sobe');
-  assert.equal(LS.get(SKEY + ':cloud:uid'), 'B');
+  assert.equal(LS.get(ev('SKEY') + ':cloud:uid'), 'B');
 });
 
 await atest('nuvemSincronizar só aplica o local após a transação dar certo', async () => {
@@ -333,6 +368,7 @@ await atest('nuvemSincronizar (mesclar) preserva item só local e o sobe', async
 });
 
 await atest('nuvemBaixar substitui o local (remove ausentes no cloud) e permite desfazer', async () => {
+  run("usarProgressoUid('B')");
   ev(`setMark(${JSON.stringify(TID)}, 0, 'ok')`);
   ev(`setQuizAns(${JSON.stringify(TID)}, 1, 2)`);
   ev(`setMark(${JSON.stringify(TID)}, 5, 'bad')`);
@@ -349,6 +385,83 @@ await atest('nuvemBaixar substitui o local (remove ausentes no cloud) e permite 
   assert.equal(ev(`getQuizAns(${JSON.stringify(TID)}, 1)`), 2);
   assert.equal(ev(`getMark(${JSON.stringify(TID)}, 5)`), 'bad');
   assert.equal(ev('temBackupLocal()'), false, 'backup consumido ao restaurar');
+});
+
+await atest('progresso local é separado por UID sem apagar o progresso legado', async () => {
+  ev(`setMark(${JSON.stringify(TID)}, 0, 'ok')`);
+  run(`usarProgressoUid('A')`);
+  assert.equal(ev(`getMark(${JSON.stringify(TID)}, 0)`), '', 'conta nova não herda local anônimo');
+  ev(`setMark(${JSON.stringify(TID)}, 0, 'bad')`);
+  run(`usarProgressoUid('B')`);
+  assert.equal(ev(`getMark(${JSON.stringify(TID)}, 0)`), '', 'outra conta não herda os dados de A');
+  run('usarProgressoUid(null)');
+  assert.equal(ev(`getMark(${JSON.stringify(TID)}, 0)`), 'ok', 'progresso legado permanece intacto');
+});
+
+await atest('backup com UID não pode ser restaurado por outra conta', async () => {
+  globalThis.FB.auth = { currentUser: { uid: 'B' } };
+  run(`CLOUD_USER = { uid: 'B' }; LS.set(SKEY + ':cloud:backup', JSON.stringify({ uid:'A', data:{ marks:{}, quiz:{}, rev:{} } }));`);
+  await run('nuvemRestaurarBackup()');
+  assert.match(evj('CLOUD_MSG').m, /identidade compatível/);
+  assert.ok(ev('temBackupLocal()'), 'backup é preservado para restauração legítima');
+});
+
+await atest('sync não mistura snapshot de B no doc A se a sessão troca após tx.get', async () => {
+  run("usarProgressoUid('B')");
+  ev(`setMark(${JSON.stringify(TID)}, 0, 'ok')`);
+  const gate = deferred();
+  const st = mockCloud(null);
+  st.failTx = false;
+  FB.fs.runTransaction = async (_db, cb) => cb({
+    get: async () => gate.promise,
+    set: () => { st.txSets++; },
+  });
+  const pending = run('nuvemSincronizar()');
+  await Promise.resolve(); await Promise.resolve();
+  run(`AUTH_EPOCH++; FB.auth.currentUser = {uid:'C'}; CLOUD_USER = FB.auth.currentUser; usarProgressoUid('C');`);
+  gate.resolve({ exists: () => false, data: () => null });
+  await pending;
+  assert.equal(st.txSets, 0, 'transação reexecutada/atrasada aborta antes de tx.set');
+  assert.equal(ev(`getMark(${JSON.stringify(TID)}, 0)`), '', 'namespace de C não recebe snapshot de A');
+});
+
+await atest('aprovação atrasada de A não é aplicada depois da troca para B', async () => {
+  const gate = deferred();
+  const userA = { uid:'A', emailVerified:true, getIdToken: async () => {} };
+  globalThis.FB.loaded = true;
+  globalThis.FB.auth = { currentUser:userA };
+  globalThis.FB.fs = { doc: (_db, col, uid) => ({col, uid}), getDoc: async () => gate.promise };
+  globalThis.FB.firestore = {};
+  run('AUTH_EPOCH++; CLOUD_USER = FB.auth.currentUser; CLOUD_APROVACAO = "unknown";');
+  const pending = run('nuvemAtualizarEstado()');
+  await Promise.resolve();
+  run(`AUTH_EPOCH++; FB.auth.currentUser = {uid:'B', emailVerified:true}; CLOUD_USER = FB.auth.currentUser; CLOUD_APROVACAO = 'unknown'; usarProgressoUid('B');`);
+  gate.resolve({ exists: () => true, data: () => ({ aprovado:true }) });
+  await pending;
+  assert.equal(ev('CLOUD_APROVACAO'), 'unknown', 'resultado A obsoleto não libera B');
+});
+
+await atest('download atrasado não substitui dados depois de logout/troca de conta', async () => {
+  const gate = deferred();
+  const st = mockCloud(null);
+  FB.fs.getDoc = async () => gate.promise;
+  run("usarProgressoUid('B')");
+  ev(`setMark(${JSON.stringify(TID)}, 0, 'ok')`);
+  const pending = run('nuvemBaixar()');
+  await Promise.resolve(); await Promise.resolve();
+  run(`AUTH_EPOCH++; FB.auth.currentUser = null; CLOUD_USER = null; usarProgressoUid(null);`);
+  gate.resolve({ exists: () => true, data: () => ({ marks:{}, quiz:{}, rev:{} }) });
+  await pending;
+  run("usarProgressoUid('B')");
+  assert.equal(ev(`getMark(${JSON.stringify(TID)}, 0)`), 'ok', 'progresso original preservado');
+});
+
+await atest('backup antigo sem UID falha fechado e permanece disponível', async () => {
+  globalThis.FB.auth = { currentUser: { uid:'A' } };
+  run(`CLOUD_USER = { uid:'A' }; LS.set(SKEY + ':cloud:backup', JSON.stringify({ data:{ marks:{}, quiz:{}, rev:{} } }));`);
+  await run('nuvemRestaurarBackup()');
+  assert.match(evj('CLOUD_MSG').m, /sem identidade compatível/);
+  assert.ok(ev('temBackupLocal()'), 'backup legado não é descartado');
 });
 
 /* ==========================================================================

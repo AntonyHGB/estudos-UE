@@ -1119,7 +1119,16 @@ function buildSite(site) {
 <script>
 const DATA = JSON.parse(document.getElementById('site-data').textContent);
 DATA.readmeHtml = READMEHTML;
-const SKEY = 'estudos:' + DATA.siteKey;
+const SKEY_BASE = 'estudos:' + DATA.siteKey;
+var SKEY = SKEY_BASE;
+var LOCAL_UID = null;
+function usarProgressoUid(uid){
+  uid = uid || null;
+  if (LOCAL_UID === uid) return;
+  LOCAL_UID = uid;
+  SKEY = SKEY_BASE + (uid ? ':uid:' + uid : '');
+  ordemRevisao = LS.get(SKEY + ':ordem') === '1';
+}
 const LETTERS = ['A','B','C','D','E'];
 
 /* localStorage seguro: em modo privado do iOS o acesso pode lancar excecao,
@@ -1365,6 +1374,7 @@ function renderHome(){
   var h = '<div class="topic-head"><h1>' + DATA.emoji + ' ' + DATA.title + '</h1>' +
           '<p class="sub">Aprenda, pratique e revise no ritmo certo — ' + DATA.topics.length + ' temas, ' + totalQ + ' questões abertas e ' + totalZ + ' de múltipla escolha.</p></div>';
   if (!LS.ok) h += '<div class="note err">⚠️ Este navegador está bloqueando o armazenamento local (modo privado?). O material funciona, mas o progresso não será salvo.</div>';
+  if (LOCAL_STATUS) h += '<div class="note warn">⚠️ ' + escHtml(LOCAL_STATUS) + '</div>';
 
   var nRev = quizErrados().length + abertasRevisar().length;
   var devendo = temasDevendo();
@@ -1450,6 +1460,12 @@ var CLOUD_APROVACAO = 'unknown';
 var CLOUD_MSG = null;
 var CLOUD_ULTIMO_RESUMO = null;
 var CLOUD_BOOT = false;
+var AUTH_EPOCH = 0;
+var LOCAL_READY = false;
+var LOCAL_STATUS = '';
+function authAtual(epoch, uid){
+  return epoch === AUTH_EPOCH && !!FB.auth && !!FB.auth.currentUser && FB.auth.currentUser.uid === uid && !!CLOUD_USER && CLOUD_USER.uid === uid;
+}
 /* Cooldown do reenvio de verificação: evita confundir o usuário com envios
    repetidos (e ajuda quando o próprio Firebase responde auth/too-many-requests,
    que é limite do servidor, não do botão). */
@@ -1485,12 +1501,12 @@ async function fbCarregar(){
 function authErro(e){
   var c = (e && e.code) || '';
   var mapa = {
-    'auth/email-already-in-use':'Este e-mail já tem conta. Use "Entrar".',
+    'auth/email-already-in-use':'Não foi possível criar a conta com estes dados. Confira os dados e tente novamente.',
     'auth/invalid-email':'E-mail inválido.',
     'auth/weak-password':'Senha fraca: use ao menos 6 caracteres.',
     'auth/missing-password':'Digite a senha.',
     'auth/wrong-password':'Senha incorreta.',
-    'auth/user-not-found':'Conta não encontrada. Crie uma.',
+    'auth/user-not-found':'E-mail ou senha incorretos.',
     'auth/invalid-credential':'E-mail ou senha incorretos.',
     'auth/invalid-login-credentials':'E-mail ou senha incorretos.',
     'auth/too-many-requests':'Muitas tentativas. Aguarde um pouco.',
@@ -1561,19 +1577,26 @@ function fbErro(e){
 }
 
 async function nuvemAtualizarEstado(){
-  CLOUD_USER = (FB.loaded && FB.auth && FB.auth.currentUser) ? FB.auth.currentUser : null;
+  var user = (FB.loaded && FB.auth && FB.auth.currentUser) ? FB.auth.currentUser : null;
+  var uid = user && user.uid, epoch = AUTH_EPOCH;
+  CLOUD_USER = user;
+  usarProgressoUid(uid);
   CLOUD_APROVACAO = 'unknown';
-  if (!CLOUD_USER) return;
-  if (!CLOUD_USER.emailVerified){
-    try { await CLOUD_USER.reload(); } catch(e){}
-    if (!CLOUD_USER.emailVerified){ CLOUD_APROVACAO = 'nao-verificado'; return; }
+  if (!user) return;
+  if (!user.emailVerified){
+    try { await user.reload(); } catch(e){}
+    if (!authAtual(epoch, uid)) return;
+    if (!user.emailVerified){ CLOUD_APROVACAO = 'nao-verificado'; return; }
   }
   CLOUD_APROVACAO = 'carregando';
   try {
-    await CLOUD_USER.getIdToken(true);
-    var snap = await FB.fs.getDoc(FB.fs.doc(FB.firestore, 'acessos', CLOUD_USER.uid));
+    await user.getIdToken(true);
+    if (!authAtual(epoch, uid)) return;
+    var snap = await FB.fs.getDoc(FB.fs.doc(FB.firestore, 'acessos', uid));
+    if (!authAtual(epoch, uid)) return;
     CLOUD_APROVACAO = (snap.exists() && snap.data().aprovado === true) ? 'aprovado' : 'pendente';
   } catch(e){
+    if (!authAtual(epoch, uid)) return;
     var c = (e && e.code) || '';
     if (c === 'permission-denied') CLOUD_APROVACAO = 'pendente';
     else if (c === 'unavailable' || c === 'failed-precondition') CLOUD_APROVACAO = 'offline';
@@ -1582,19 +1605,41 @@ async function nuvemAtualizarEstado(){
 }
 
 function nuvemRedraw(){ if (location.hash === '#nuvem') renderNuvem(); }
+function nuvemAlternarSenha(botao){
+  var campo = document.getElementById('nvSenha');
+  if (!campo) return;
+  var mostrar = campo.type === 'password';
+  campo.type = mostrar ? 'text' : 'password';
+  botao.setAttribute('aria-pressed', String(mostrar));
+  botao.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
+  botao.textContent = mostrar ? 'Ocultar' : 'Mostrar';
+  campo.focus();
+}
 function nuvemAgendarBoot(){
-  if (!fbConfigurado() || CLOUD_BOOT) return;
+  if (!fbConfigurado()) { LOCAL_READY = true; return; }
+  if (CLOUD_BOOT) return;
   CLOUD_BOOT = true;
   nuvemBoot();
 }
 async function nuvemBoot(){
-  if (!await fbCarregar()){ nuvemRedraw(); return; }
-  FB.authM.onAuthStateChanged(FB.auth, async function(){
+  if (!await fbCarregar()){
+    LOCAL_STATUS = 'Não foi possível identificar uma sessão Firebase. O progresso legado foi preservado e não será associado a uma conta; o progresso novo fica isolado neste modo local até a próxima tentativa online.';
+    usarProgressoUid('offline'); LOCAL_READY = true;
+    if (location.hash !== '#nuvem') route(); else nuvemRedraw();
+    return;
+  }
+  FB.authM.onAuthStateChanged(FB.auth, async function(user){
+    AUTH_EPOCH++;
+    var epoch = AUTH_EPOCH;
+    CLOUD_USER = user || null;
+    CLOUD_APROVACAO = 'unknown';
+    usarProgressoUid(user && user.uid);
+    LOCAL_STATUS = '';
+    LOCAL_READY = true;
     await nuvemAtualizarEstado();
-    nuvemRedraw();
+    if (epoch !== AUTH_EPOCH) return;
+    route();
   });
-  await nuvemAtualizarEstado();
-  nuvemRedraw();
 }
 function nuvemRetentar(){
   FB.error = ''; CLOUD_BOOT = false; CLOUD_MSG = { t:'info', m:'Recarregando a nuvem…' };
@@ -1772,18 +1817,18 @@ function substituirProgressoLocal(p){
   });
   aplicarProgressoNuvem(p);
 }
-function salvarBackupLocal(){ LS.set(SKEY + ':cloud:backup', JSON.stringify({ at: Date.now(), data: localProgress() })); }
+function salvarBackupLocal(){ LS.set(SKEY + ':cloud:backup', JSON.stringify({ at: Date.now(), uid: CLOUD_USER && CLOUD_USER.uid, data: localProgress() })); }
 function temBackupLocal(){ return !!LS.get(SKEY + ':cloud:backup'); }
 
 /* --- leitura/escrita na nuvem --- */
-async function fbLerNuvem(){
-  var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+async function fbLerNuvem(uid){
+  var ref = FB.fs.doc(FB.firestore, 'usuarios', uid || CLOUD_USER.uid, 'areas', DATA.siteKey);
   var snap = await FB.fs.getDoc(ref);
   return snap.exists() ? normalizarNuvem(snap.data()) : null;
 }
-async function fbGravarNuvem(p){
+async function fbGravarNuvem(p, uid){
   p.updatedAt = Date.now();
-  var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+  var ref = FB.fs.doc(FB.firestore, 'usuarios', uid || CLOUD_USER.uid, 'areas', DATA.siteKey);
   await FB.fs.setDoc(ref, p);
 }
 async function nuvemPronto(){
@@ -1796,6 +1841,11 @@ async function nuvemPronto(){
 
 async function nuvemSincronizar(){
   if (!await nuvemPronto()) return;
+  var uidDaOperacao = CLOUD_USER.uid;
+  var epochDaOperacao = AUTH_EPOCH;
+  var progressoCapturado = localProgress();
+  function operacaoAtual(){ return authAtual(epochDaOperacao, uidDaOperacao); }
+  if (!operacaoAtual()) return;
   var marcador = LS.get(SKEY + ':cloud:uid');
   // Trava de conta: vale mesmo quando a nuvem ainda está vazia. Sem isso, o
   // progresso de A subiria para a conta B recém-criada.
@@ -1803,7 +1853,7 @@ async function nuvemSincronizar(){
     CLOUD_MSG = { t:'err', m:'Este navegador guarda progresso associado a outra conta. Para não misturar, use "Enviar deste aparelho" (assume este progresso para a conta atual) ou "Baixar da nuvem" (substitui o local), de propósito.' };
     nuvemRedraw(); return;
   }
-  var local = localProgress();
+  var local = progressoCapturado;
   // Sem marcador mas com progresso local: é o primeiro sync desta conta com
   // dados que podem ser legado (ou de outra pessoa). Exige confirmação para
   // associá-los; não sobe nada sozinho.
@@ -1816,21 +1866,26 @@ async function nuvemSincronizar(){
     // aparelhos sincronizando juntos não se sobrescrevem — o Firestore serializa
     // e reexecuta a transação, e cada item resolve pelo carimbo de tempo.
     merged = await FB.fs.runTransaction(FB.firestore, async function(tx){
-      var ref = FB.fs.doc(FB.firestore, 'usuarios', CLOUD_USER.uid, 'areas', DATA.siteKey);
+      if (!operacaoAtual()) throw Object.assign(new Error('sessão alterada'), { code:'session-changed' });
+      var ref = FB.fs.doc(FB.firestore, 'usuarios', uidDaOperacao, 'areas', DATA.siteKey);
       var snap = await tx.get(ref);
+      if (!operacaoAtual()) throw Object.assign(new Error('sessão alterada'), { code:'session-changed' });
       var cloud = snap.exists() ? normalizarNuvem(snap.data()) : null;
       if (cloud && (cloud.fp !== DATA.fp || cloud.chash !== DATA.chash)){
         aviso = 'Atenção: o material mudou desde o progresso na nuvem; itens que não existem mais foram ignorados. ';
       }
-      var m = mergeProgress(localProgress(), cloud || { marks:{}, quiz:{}, rev:{}, updatedAt:0 });
+      var m = mergeProgress(progressoCapturado, cloud || { marks:{}, quiz:{}, rev:{}, updatedAt:0 });
       m.updatedAt = Date.now();
+      if (!operacaoAtual()) throw Object.assign(new Error('sessão alterada'), { code:'session-changed' });
       tx.set(ref, m);
       return m;
     });
   } catch(e){
+    if (e && e.code === 'session-changed') return;
     CLOUD_MSG = { t:'err', m:'Falha ao sincronizar; nada foi alterado neste navegador. ' + fbErro(e) };
     nuvemRedraw(); return;
   }
+  if (!operacaoAtual()) return;
   var mudou = diffProgresso(local, merged);
   aplicarProgressoNuvem(merged); // só depois de a gravação ter dado certo
   LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid);
@@ -1840,23 +1895,32 @@ async function nuvemSincronizar(){
 }
 async function nuvemEnviar(){
   if (!await nuvemPronto()) return;
+  var uidDaOperacao = CLOUD_USER.uid;
   var local = localProgress();
   var aviso = contaDiferente() ? 'Atenção: este navegador guarda progresso de outra conta. ' : '';
   if (!confirm(aviso + 'Enviar o progresso deste navegador para a nuvem da conta ' + CLOUD_USER.email + '? Isto substitui o que estiver na nuvem desta conta.')) return;
-  try { await fbGravarNuvem(local); LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid); }
+  try { await fbGravarNuvem(local, uidDaOperacao); }
   catch(e){ CLOUD_MSG = { t:'err', m:'Falha ao enviar: ' + fbErro(e) }; nuvemRedraw(); return; }
+  if (!FB.auth.currentUser || FB.auth.currentUser.uid !== uidDaOperacao || CLOUD_USER.uid !== uidDaOperacao) return;
+  LS.set(SKEY + ':cloud:uid', uidDaOperacao);
   var c = contarProgresso(local);
   CLOUD_ULTIMO_RESUMO = 'Enviado: ' + c.marcas + ' marcações e ' + c.quiz + ' respostas.';
   nuvemRedraw();
 }
 async function nuvemBaixar(){
   if (!await nuvemPronto()) return;
+  var uidDaOperacao = CLOUD_USER.uid;
+  var epochDaOperacao = AUTH_EPOCH;
+  function operacaoAtual(){ return authAtual(epochDaOperacao, uidDaOperacao); }
+  if (!operacaoAtual()) return;
   var cloud;
-  try { cloud = await fbLerNuvem(); }
+  try { cloud = await fbLerNuvem(uidDaOperacao); }
   catch(e){ CLOUD_MSG = { t:'err', m:'Não consegui ler a nuvem: ' + fbErro(e) }; nuvemRedraw(); return; }
+  if (!operacaoAtual()) return;
   if (!cloud){ CLOUD_MSG = { t:'info', m:'Ainda não há progresso na nuvem para esta conta.' }; nuvemRedraw(); return; }
   var aviso = (cloud.fp !== DATA.fp || cloud.chash !== DATA.chash) ? 'Atenção: o material mudou desde este backup. ' : '';
   if (!confirm(aviso + 'Baixar da nuvem SUBSTITUI o progresso deste navegador pelo da conta ' + CLOUD_USER.email + ' (um backup local fica guardado para desfazer). Continuar?')) return;
+  if (!operacaoAtual()) return;
   salvarBackupLocal();
   substituirProgressoLocal(cloud);
   LS.set(SKEY + ':cloud:uid', CLOUD_USER.uid);
@@ -1870,6 +1934,7 @@ function nuvemRestaurarBackup(){
   var obj;
   try { obj = JSON.parse(raw); } catch(e){ obj = null; }
   if (!obj || !obj.data){ LS.del(SKEY + ':cloud:backup'); CLOUD_MSG = { t:'err', m:'O backup local estava corrompido e foi descartado.' }; nuvemRedraw(); return; }
+  if (!obj.uid || !CLOUD_USER || obj.uid !== CLOUD_USER.uid) { CLOUD_MSG = { t:'err', m:'Backup sem identidade compatível; entre na conta de origem. O backup foi preservado.' }; nuvemRedraw(); return; }
   if (!confirm('Restaurar o progresso local de antes do último "Baixar da nuvem"? Isto substitui o progresso atual deste navegador.')) return;
   substituirProgressoLocal(normalizarNuvem(obj.data) || { marks:{}, quiz:{}, rev:{} });
   LS.del(SKEY + ':cloud:backup');
@@ -1911,7 +1976,7 @@ function renderNuvem(){
     h += '<div class="sync-box"><h3>Entrar</h3>' +
       '<p>Uma conta por pessoa. O cadastro pode estar aberto tecnicamente, mas o <strong>acesso ao progresso</strong> só é liberado quando o admin aprova a conta. Sem aprovação, não há leitura nem escrita na nuvem.</p>' +
       '<div class="conta"><input id="nvEmail" type="email" placeholder="e-mail" autocomplete="email">' +
-      '<input id="nvSenha" type="password" placeholder="senha (mín. 6)" autocomplete="current-password"></div>' +
+      '<div class="conta-senha"><input id="nvSenha" type="password" placeholder="senha (mín. 6)" autocomplete="current-password"><button class="btn ghost" type="button" aria-label="Mostrar senha" aria-pressed="false" onclick="nuvemAlternarSenha(this)">Mostrar</button></div></div>' +
       '<button class="btn" onclick="nuvemEntrar()">Entrar</button>' +
       '<button class="btn ghost" onclick="nuvemRegistrar()">Criar conta</button>' +
       '<p style="font-size:.85em;color:var(--muted)">Ao criar a conta, envio um e-mail de verificação. Depois de confirmar, aguarde a aprovação do admin.</p></div>';
@@ -2529,7 +2594,12 @@ function bindTopicLinks(){
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 function route(){
   var hash = location.hash || '#home';
+  nuvemAgendarBoot();
   closeSidebar();
+  if (!LOCAL_READY){
+    document.getElementById('main').innerHTML = '<div class="topic-head"><h1>Preparando progresso local…</h1><p class="sub">Aguardando a identificação segura da sessão. Seus dados existentes não foram alterados.</p></div>';
+    return;
+  }
   // Os itens acertados ficam visiveis com a explicacao enquanto voce esta na
   // tela de revisao; ao sair, somem de vez.
   if (hash !== '#revisar') revFeitos = {};
