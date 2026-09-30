@@ -26,6 +26,7 @@ Responda em voz alta antes de revelar a resposta. Acertar lendo é reconhecer; a
 
 - `NN-*.md` — resumos e questões abertas de um tema (a fonte de verdade do conteúdo);
 - `quiz.json` — questões de múltipla escolha, com a chave do tema;
+- `glossario.json` — termos curados que viram atalhos no texto de estudo (primeira menção de cada seção); validado pelo build;
 - `index.html`, `manifest.webmanifest`, `sw.js`, `icon-*.png` — **gerados** por `node build-site.mjs`; nunca editar à mão.
 
 As regras completas de autoria e publicação estão no `README.md` da raiz do projeto.

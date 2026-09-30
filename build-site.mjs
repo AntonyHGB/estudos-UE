@@ -302,28 +302,191 @@ function escapeHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function inline(md, linkMap) {
+function escapeAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ============================== glossário (autolink do texto de estudo) ==============================
+   Cada área pode trazer um `glossario.json` curado: termos que ganham um atalho
+   para o ponto do material onde o conceito é definido.
+
+     { "termos": [ { "termo": "hérnia inguinal", "tema": "17", "secao": "sec-parte-a-hernias" } ] }
+
+   `secao` é opcional; sem ela o destino é o topo do tema. O build RECUSA o
+   arquivo quando o schema está errado, quando o tema/seção não existem no
+   material, quando um termo é ambíguo (prefixo de outro) ou quando a entrada não
+   gera nenhum atalho — o mapa curado não pode ter destino inventado nem entrada
+   morta. O autolink vale só para o texto das seções de ESTUDO: quiz,
+   alternativas, gabaritos, explicações, questões abertas e títulos nunca ganham
+   link. Cada termo é linkado no máximo uma vez por seção (primeira menção). */
+
+// Marcação no termo confundiria o escape/HTML e a própria contagem por atributo.
+const RE_TERMO_PROIBIDO = /[*_`\[\]<>|()"'&;]/;
+// Letras/números (com acento), sublinhado e hífen contam como "dentro da
+// palavra": evita casar "pós" em "pós-operatório" ou "hérnia" em "hérnia-central".
+const LIM_TERMO_ESQ = '(?<![\\p{L}\\p{N}_-])';
+const LIM_TERMO_DIR = '(?![\\p{L}\\p{N}_-])';
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function carregarGlossario(dir, folder, idsMd, tocPorTema) {
+  const p = join(dir, 'glossario.json');
+  if (!existsSync(p)) return [];
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(p, 'utf8'));
+  } catch (e) {
+    throw new Error(`${folder}/glossario.json não é JSON válido — ${e.message}`);
+  }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || !Array.isArray(raw.termos)) {
+    throw new Error(`${folder}/glossario.json precisa ser um objeto com o array "termos".`);
+  }
+  const ids = new Set(idsMd);
+  const vistos = new Map();
+  const termos = raw.termos.map((item, i) => {
+    const onde = `${folder}/glossario.json termos[${i}]`;
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new Error(`${onde}: cada item precisa ser um objeto com "termo" e "tema".`);
+    }
+    if (typeof item.termo !== 'string' || !item.termo.trim()) {
+      throw new Error(`${onde}: "termo" precisa ser texto não vazio.`);
+    }
+    const termo = item.termo.trim().replace(/\s+/g, ' ');
+    if (termo.length < 3) throw new Error(`${onde}: "${termo}" é curto demais (mínimo 3 caracteres).`);
+    if (RE_TERMO_PROIBIDO.test(termo)) {
+      throw new Error(`${onde}: "${termo}" contém caractere de marcação — escreva o termo em texto simples.`);
+    }
+    const chave = termo.toLowerCase();
+    if (vistos.has(chave)) {
+      throw new Error(`${onde}: "${termo}" está duplicado (já definido em termos[${vistos.get(chave)}]).`);
+    }
+    vistos.set(chave, i);
+    if (typeof item.tema !== 'string' || !/^\d{2}$/.test(item.tema)) {
+      throw new Error(`${onde}: "tema" precisa ser o id de dois dígitos (ex.: "17").`);
+    }
+    if (!ids.has(item.tema)) throw new Error(`${onde}: o tema "${item.tema}" não existe nesta área.`);
+    let secao = null;
+    if (item.secao !== undefined && item.secao !== null && item.secao !== '') {
+      if (typeof item.secao !== 'string' || !/^sec-[a-z0-9à-ú-]+$/.test(item.secao)) {
+        throw new Error(`${onde}: "secao" precisa ter o formato sec-... (ex.: "sec-parte-a-hernias").`);
+      }
+      if (!tocPorTema[item.tema].has(item.secao)) {
+        throw new Error(`${onde}: a seção "${item.secao}" não existe no tema ${item.tema}.`);
+      }
+      secao = item.secao;
+    }
+    return { termo, chave, tema: item.tema, secao };
+  });
+  // Ambiguidade: se um termo é prefixo de palavra de outro, o curto apontaria
+  // para um destino em textos que falam do conceito do longo (ex.: "hérnia" ×
+  // "hérnia inguinal"). Exija o termo qualificado.
+  for (const a of termos) {
+    for (const b of termos) {
+      if (a === b) continue;
+      if (b.chave.startsWith(a.chave) && /[\s-]/.test(b.chave[a.chave.length] || '')) {
+        throw new Error(
+          `${folder}/glossario.json: "${a.termo}" é prefixo de "${b.termo}" — ` +
+            'qualifique o termo para não haver ambiguidade.'
+        );
+      }
+    }
+  }
+  return termos;
+}
+
+// Compila cada termo em regex (palavra inteira, sem diferenciar maiúsculas) e no
+// HTML do atalho. O destino já entra pronto no href; o clique é ligado por
+// bindGlossaryLinks(), que trata o caso de hash igual (hashchange não dispara).
+function compilarGlossario(termos, rotuloDestino) {
+  return termos.map((t) => {
+    const rotulo = rotuloDestino(t.tema, t.secao);
+    return {
+      ...t,
+      re: new RegExp(LIM_TERMO_ESQ + escapeRegExp(t.termo) + LIM_TERMO_DIR, 'giu'),
+      htmlInicio:
+        `<a class="gl-link" href="#topic/${t.tema}/estudo" data-topic="${t.tema}" data-tab="estudo"` +
+        ` data-ancora="${t.secao || ''}" data-termo="${escapeAttr(t.chave)}"` +
+        ` title="Ir para ${escapeAttr(rotulo)}" aria-label="${escapeAttr(t.termo + ' — ir para ' + rotulo)}">`,
+    };
+  });
+}
+
+// Estado do autolink por seção: marca o que já foi linkado (primeira menção) e
+// pula o termo cuja própria seção de destino é a que está sendo lida.
+function criarEstadoAutolink(compilados, topicId, secaoId) {
+  return {
+    termos: compilados.map((c) => ({
+      c,
+      pular: c.tema === topicId && (!c.secao || c.secao === secaoId),
+    })),
+    vistos: Object.create(null),
+  };
+}
+
+function aplicarAutolinks(texto, auto) {
+  if (!auto) return texto;
+  const achados = [];
+  for (const { c, pular } of auto.termos) {
+    if (pular || auto.vistos[c.chave]) continue;
+    c.re.lastIndex = 0;
+    let m;
+    while ((m = c.re.exec(texto)) !== null) {
+      achados.push({ ini: m.index, fim: m.index + m[0].length, texto: m[0], c });
+      if (!m[0].length) c.re.lastIndex++;
+    }
+  }
+  if (!achados.length) return texto;
+  // Mais à esquerda; empate pelo mais longo (hérnia inguinal vence hérnia).
+  achados.sort((a, b) => a.ini - b.ini || b.fim - a.fim);
+  let out = '';
+  let pos = 0;
+  for (const a of achados) {
+    if (a.ini < pos || auto.vistos[a.c.chave]) continue;
+    out += texto.slice(pos, a.ini) + a.c.htmlInicio + a.texto + '</a>';
+    pos = a.fim;
+    auto.vistos[a.c.chave] = true;
+  }
+  return out + texto.slice(pos);
+}
+
+function inline(md, linkMap, auto) {
   let s = escapeHtml(md);
   const codes = [];
   s = s.replace(/`([^`]+)`/g, (_, c) => {
     codes.push(c);
     return `\u0000${codes.length - 1}\u0000`;
   });
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
-    const mdMatch = href.match(/^([0-9]{2}-[^)#]*\.md)/);
-    if (mdMatch && linkMap && linkMap[mdMatch[1]]) {
-      return `<a href="#" class="topic-link" data-topic="${linkMap[mdMatch[1]]}">${text}</a>`;
-    }
-    if (href.endsWith('.md')) return `<span class="ref">${text}</span>`;
-    return `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
-  });
   s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[\s(>—·])\*([^*\n]+)\*(?=[\s.,;:)!?»\u2014]|$)/g, '$1<em>$2</em>');
+  // Links do markdown viram placeholder: o autolink não pode entrar dentro de um
+  // link existente (nem gerar âncora aninhada).
+  const links = [];
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, href) => {
+    const mdMatch = href.match(/^([0-9]{2}-[^)#]*\.md)/);
+    let html;
+    if (mdMatch && linkMap && linkMap[mdMatch[1]]) {
+      html = `<a href="#" class="topic-link" data-topic="${linkMap[mdMatch[1]]}">${text}</a>`;
+    } else if (href.endsWith('.md')) {
+      html = `<span class="ref">${text}</span>`;
+    } else {
+      html = `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+    }
+    links.push(html);
+    return `\u0001${links.length - 1}\u0001`;
+  });
+  if (auto) s = aplicarAutolinks(s, auto);
+  s = s.replace(/\u0001(\d+)\u0001/g, (_, i) => links[+i]);
   s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${escapeHtml(codes[+i])}</code>`);
   return s;
 }
 
-function mdToHtml(md, linkMap) {
+function mdToHtml(md, linkMap, auto) {
   const lines = md.split('\n');
   const out = [];
   let i = 0;
@@ -349,6 +512,8 @@ function mdToHtml(md, linkMap) {
       const lvl = h[1].length;
       const text = h[2].trim();
       const id = 'h-' + text.toLowerCase().replace(/[^a-z0-9à-ú]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+      // Títulos ficam fora do autolink: link em título atrapalha a leitura e a
+      // âncora da seção já é o próprio destino.
       out.push(`<h${lvl} id="${id}">${inline(text, linkMap)}</h${lvl}>`);
       i++;
       continue;
@@ -365,9 +530,9 @@ function mdToHtml(md, linkMap) {
         i++;
       }
       let t = '<div class="table-wrap"><table><thead><tr>';
-      t += header.map((c) => `<th>${inline(c, linkMap)}</th>`).join('');
+      t += header.map((c) => `<th>${inline(c, linkMap, auto)}</th>`).join('');
       t += '</tr></thead><tbody>';
-      for (const r of rows) t += '<tr>' + r.map((c) => `<td>${inline(c, linkMap)}</td>`).join('') + '</tr>';
+      for (const r of rows) t += '<tr>' + r.map((c) => `<td>${inline(c, linkMap, auto)}</td>`).join('') + '</tr>';
       t += '</tbody></table></div>';
       out.push(t);
       continue;
@@ -376,7 +541,7 @@ function mdToHtml(md, linkMap) {
     if (/^>\s?/.test(line)) {
       const buf = [];
       while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++; }
-      out.push(`<blockquote>${mdToHtml(buf.join('\n'), linkMap)}</blockquote>`);
+      out.push(`<blockquote>${mdToHtml(buf.join('\n'), linkMap, auto)}</blockquote>`);
       continue;
     }
 
@@ -408,12 +573,12 @@ function mdToHtml(md, linkMap) {
       while (k < items.length) {
         const it = items[k];
         const cb = it.text.match(/^\[( |x)\]\s+(.*)$/);
-        const body = cb ? `<span class="cb">${cb[1] === 'x' ? '☑' : '☐'}</span> ${inline(cb[2], linkMap)}` : inline(it.text, linkMap);
+        const body = cb ? `<span class="cb">${cb[1] === 'x' ? '☑' : '☐'}</span> ${inline(cb[2], linkMap, auto)}` : inline(it.text, linkMap, auto);
         const subs = [];
         let j = k + 1;
         while (j < items.length && items[j].indent > it.indent + 1) { subs.push(items[j]); j++; }
         if (subs.length) {
-          html += `<li>${body}<ul>` + subs.map((s) => `<li>${inline(s.text, linkMap)}</li>`).join('') + '</ul></li>';
+          html += `<li>${body}<ul>` + subs.map((s) => `<li>${inline(s.text, linkMap, auto)}</li>`).join('') + '</ul></li>';
           k = j;
         } else {
           html += `<li>${body}</li>`;
@@ -440,7 +605,7 @@ function mdToHtml(md, linkMap) {
       buf.push(lines[i]);
       i++;
     }
-    out.push(`<p>${inline(buf.join(' '), linkMap)}</p>`);
+    out.push(`<p>${inline(buf.join(' '), linkMap, auto)}</p>`);
   }
   return out.join('\n');
 }
@@ -471,6 +636,13 @@ const LEVEL_NAME = { '🟢': 'basico', '🟡': 'intermediario', '🔴': 'avancad
 
 function isQuestionSection(title) {
   return /perguntas|cenários resolvidos|estudos de caso/i.test(title);
+}
+
+/* "Fontes deste tema" é bibliografia (caminhos de PDF e notas de divergência),
+   não texto de estudo: fica fora do autolink e não serve como destino. A seção
+   continua no material e no sumário do tema, como sempre esteve. */
+function isFonteSection(title) {
+  return /^fontes\b/i.test(title.trim());
 }
 
 function parseQuestionSection(body) {
@@ -525,7 +697,11 @@ function parseQuestionSection(body) {
   };
 }
 
-function parseTopic(md, linkMap) {
+/* Âncora determinística de uma seção (H2) do estudo — usada pelo TOC, pela
+   busca e como destino do autolink do glossário. */
+const secId = (t) => 'sec-' + t.toLowerCase().replace(/[^a-z0-9à-ú]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+
+function parseTopic(md, linkMap, compilados, topicId) {
   const lines = md.split('\n');
   const titleLine = lines.find((l) => /^#\s+/.test(l)) || '# Sem título';
   const fullTitle = titleLine.replace(/^#\s+/, '').trim();
@@ -551,10 +727,14 @@ function parseTopic(md, linkMap) {
     }
   }
 
-  const secId = (t) => 'sec-' + t.toLowerCase().replace(/[^a-z0-9à-ú]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-
   const studyHtml = studySections
-    .map((s) => `<section class="study-sec" id="${secId(s.title)}"><h2>${inline(s.title, linkMap)}</h2>${mdToHtml(s.body, linkMap)}</section>`)
+    .map((s) => {
+      const id = secId(s.title);
+      // Estado novo por seção: cada termo do glossário entra no máximo uma vez
+      // (primeira menção) e nunca dentro da própria seção de destino.
+      const auto = compilados && compilados.length && !isFonteSection(s.title) ? criarEstadoAutolink(compilados, topicId, id) : null;
+      return `<section class="study-sec" id="${id}"><h2>${inline(s.title, linkMap)}</h2>${mdToHtml(s.body, linkMap, auto)}</section>`;
+    })
     .join('\n');
 
   return {
@@ -621,6 +801,11 @@ th{background:var(--accent-soft);white-space:nowrap}
 tr:last-child td{border-bottom:none}
 .ref{color:var(--accent);font-weight:600}
 .cb{color:var(--accent)}
+/* Atalho do glossário: discreto (herda a cor do texto, sublinhado pontilhado)
+   mas com foco visível herdado de a:focus-visible. */
+.gl-link{color:inherit;text-decoration:underline dotted;text-decoration-thickness:1px;text-underline-offset:3px;
+  text-decoration-color:color-mix(in srgb,var(--accent) 70%,transparent)}
+.gl-link:hover,.gl-link:focus-visible{color:var(--accent);text-decoration-style:solid;text-decoration-color:var(--accent)}
 
 .layout{display:flex;min-height:100vh}
 aside{width:280px;flex-shrink:0;background:color-mix(in srgb,var(--panel) 94%,transparent);border-right:1px solid var(--border);
@@ -1034,6 +1219,31 @@ function auditarQuiz(folder, quizBank) {
 // algum, o build termina com exit ≠ 0 (a auditoria não pode ser ignorada).
 const errosAuditoria = [];
 
+const VERBOSE_GLOSSARIO = process.argv.includes('--glossario');
+
+/* Confere que cada termo curado realmente gera atalho no texto de estudo. Uma
+   entrada sem nenhum atalho é destino inútil (ou termo que só existe em título,
+   código, link ou na própria seção de destino): o build falha em vez de
+   publicar um mapa que não aponta para lugar nenhum. */
+function validarAtalhos(folder, compilados, topics) {
+  const contagem = new Map(compilados.map((c) => [c.chave, 0]));
+  for (const t of topics) {
+    for (const m of t.studyHtml.matchAll(/class="gl-link"[^>]*data-termo="([^"]*)"/g)) {
+      if (contagem.has(m[1])) contagem.set(m[1], contagem.get(m[1]) + 1);
+    }
+  }
+  const mortos = compilados.filter((c) => !contagem.get(c.chave));
+  if (mortos.length) {
+    throw new Error(
+      `${folder}/glossario.json: termo(s) sem nenhum atalho no texto de estudo: ` +
+        mortos.map((c) => `"${c.termo}"`).join(', ') +
+        '. O termo precisa aparecer como palavra inteira, fora de título/código/link' +
+        ' e fora da própria seção de destino.'
+    );
+  }
+  return contagem;
+}
+
 function buildSite(site) {
   const dir = join(ROOT, site.folder);
   const arquivosMd = existsSync(dir) ? readdirSync(dir).filter((f) => /^\d{2}-.*\.md$/.test(f)) : [];
@@ -1067,10 +1277,31 @@ function buildSite(site) {
   const idsMd = files.map((f) => f.slice(0, 2));
   validarQuiz(site.folder, quizBank, idsMd);
 
-  const topics = files.map((f) => {
-    const md = readFileSync(join(dir, f), 'utf8');
-    const t = parseTopic(md, linkMap);
+  // Duas fases: primeiro um parse sem autolink, só para conhecer as seções de
+  // estudo de cada tema; o glossário é validado contra elas antes de valer.
+  const mdPorArquivo = new Map(files.map((f) => [f, readFileSync(join(dir, f), 'utf8')]));
+  const base = files.map((f) => parseTopic(mdPorArquivo.get(f), linkMap));
+
+  const tocPorTema = {};
+  const tituloSecaoPorTema = {};
+  const tituloTemaPorId = {};
+  files.forEach((f, i) => {
     const id = f.slice(0, 2);
+    tocPorTema[id] = new Set(base[i].toc.filter((s) => !isFonteSection(s.title)).map((s) => s.id));
+    tituloSecaoPorTema[id] = new Map(base[i].toc.map((s) => [s.id, s.title]));
+    tituloTemaPorId[id] = base[i].fullTitle;
+  });
+
+  const glossario = carregarGlossario(dir, site.folder, idsMd, tocPorTema);
+  const compilados = compilarGlossario(glossario, (tema, secao) =>
+    secao ? `${tituloTemaPorId[tema]} · ${tituloSecaoPorTema[tema].get(secao)}` : tituloTemaPorId[tema]
+  );
+
+  const topics = files.map((f, i) => {
+    const id = f.slice(0, 2);
+    const t = compilados.length
+      ? parseTopic(mdPorArquivo.get(f), linkMap, compilados, id)
+      : base[i];
     const quiz = (quizBank[id] || []).map((q) => ({
       n: q.n || '🟡',
       levelName: LEVEL_NAME[q.n] || 'intermediario',
@@ -2371,6 +2602,16 @@ function irPara(tid, tab, ancora, foco){
   focoPendente = { ancora: ancora, foco: foco };
   location.hash = '#topic/' + tid + '/' + tab;
 }
+/* Atalho do glossário: mesmo destino do irPara, mas quando a rota já é a de
+   destino o hash não muda e o hashchange não dispara — então destacamos direto.
+   O href do link já aponta para #topic/NN/estudo, o que mantém o "Voltar" do
+   histórico funcionando quando o destino é outro tema. */
+function irParaAncora(tid, tab, ancora){
+  var alvo = '#topic/' + tid + '/' + (tab || 'estudo');
+  focoPendente = { ancora: ancora || '', foco: '' };
+  if (location.hash === alvo) aplicarFoco();
+  else location.hash = alvo;
+}
 function aplicarFoco(){
   if (!focoPendente) return;
   var f = focoPendente; focoPendente = null;
@@ -2467,6 +2708,7 @@ function renderTopic(id, tab){
   }
   document.getElementById('main').innerHTML = h;
   bindTopicLinks();
+  bindGlossaryLinks();
 }
 
 function goTab(id, tab){
@@ -2620,6 +2862,18 @@ function bindTopicLinks(){
     a.addEventListener('click', function(e){ e.preventDefault(); location.hash = '#topic/' + a.dataset.topic; });
   });
 }
+/* Atalhos do glossário são âncoras reais: o href (com o destino completo)
+   continua valendo para teclado, menu de contexto e cópia; aqui só evitamos a
+   dupla troca de rota e cuidamos do caso de hash igual (mesmo tema/aba), em que
+   o hashchange não dispara e o destaque precisa ser feito na hora. */
+function bindGlossaryLinks(){
+  document.querySelectorAll('.gl-link').forEach(function(a){
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      irParaAncora(a.dataset.topic, a.dataset.tab, a.dataset.ancora);
+    });
+  });
+}
 
 /* ---------- roteamento (a aba entra no hash: #topic/03/quiz) ---------- */
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -2762,6 +3016,20 @@ self.addEventListener('fetch', (e) => {
     `✔ ${site.folder}/ — ${topics.length} temas, ${totalQuestions} abertas, ${totalQuiz} quiz, ` +
       `${(finalHtml.length / 1024).toFixed(0)} KB (v ${version})`
   );
+
+  if (compilados.length) {
+    const contagem = validarAtalhos(site.folder, compilados, topics);
+    const totalAtalhos = [...contagem.values()].reduce((a, b) => a + b, 0);
+    console.log(`  glossário: ${compilados.length} termos curados, ${totalAtalhos} atalhos no texto de estudo`);
+    if (VERBOSE_GLOSSARIO) {
+      compilados
+        .map((c) => ({ c, n: contagem.get(c.chave) }))
+        .sort((a, b) => a.c.chave.localeCompare(b.c.chave, 'pt-BR'))
+        .forEach(({ c, n }) =>
+          console.log(`    ${String(n).padStart(3)}× ${c.termo} → tema ${c.tema}${c.secao ? ' · ' + c.secao : ''}`)
+        );
+    }
+  }
 
   for (const t of topics) {
     if (t.cards.length === 0) console.warn(`  ⚠ tema ${t.id} sem questões abertas`);

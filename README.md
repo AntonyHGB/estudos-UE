@@ -13,7 +13,7 @@ Material de estudo de medicina com site estático gerado a partir dos markdowns:
 
 ## Como funciona
 
-Os arquivos `NN-*.md` são a fonte de verdade do conteúdo, e o `quiz.json` de cada área guarda as questões de múltipla escolha. O script `build-site.mjs` (Node 22 puro, sem dependências) lê tudo e gera, para cada área:
+Os arquivos `NN-*.md` são a fonte de verdade do conteúdo, e o `quiz.json` de cada área guarda as questões de múltipla escolha. Uma área pode ter também um `glossario.json` curado: termos que viram atalhos discretos no texto de estudo (veja [Glossário e atalhos](#glossário-e-atalhos-no-texto-de-estudo)). O script `build-site.mjs` (Node 22 puro, sem dependências) lê tudo e gera, para cada área:
 
 - `index.html` — página completa e auto-contida, com três abas por tema: **Estudo**, **Quiz** (com correção imediata) e **Questões abertas** (resposta oculta e autoavaliação). Funciona até aberta direto do disco, por `file://`.
 - `manifest.webmanifest`, `sw.js` e ícones PNG — camada opcional que torna o site instalável na tela de início e legível offline. Só entra em ação sob `http(s)`.
@@ -26,7 +26,7 @@ Para acrescentar uma trilha: registre-a em `SITES` (no `build-site.mjs`, com pas
 
 ## Regras do projeto
 
-1. **A verdade está nos fontes.** Conteúdo e gabaritos vivem nos `NN-*.md` e no `quiz.json`; os HTML/JS gerados são descartáveis.
+1. **A verdade está nos fontes.** Conteúdo e gabaritos vivem nos `NN-*.md` e no `quiz.json`; os atalhos do texto de estudo vivem no `glossario.json` de cada área. Os HTML/JS gerados são descartáveis.
 2. **Mudou algo? Rode `node build-site.mjs`** e commite também o resultado gerado — o CI falha se o arquivo commitado divergir da fonte.
 3. **Nada de material sigiloso no repositório.** `documentos-fontes/` (PDFs, imagens e anotações de aula), `_fontes-extraidas/`, `_quiz-fragmentos/`, `_modelo-referencia/` e notas internas ficam fora do versionamento. O que for publicado no GitHub Pages é só o site. Exceção intencional: `firebase-config.json` contém apenas a config **pública** do app web e precisa ficar no HTML publicado para o site funcionar — nunca coloque credencial de administrador nele (o build recusa).
 4. **Quiz bem desenhado:**
@@ -96,6 +96,28 @@ node balancear-quiz.mjs urgencia-e-emergencia
 
 Escrevendo questão é natural deixar a correta sempre na mesma posição — e aí dá para gabaritar marcando sempre a mesma letra. O script troca a correta de lugar seguindo um padrão rotacionado por área e tema (25% por letra). É troca de pares: nenhum texto muda. Ele aborta se alguma explicação citar alternativa por letra.
 
+### Glossário e atalhos no texto de estudo
+
+Cada área pode ter um `glossario.json` **curado à mão** com os termos que merecem um atalho para o ponto do material em que o conceito é definido:
+
+```json
+{
+  "termos": [
+    { "termo": "coledocolitíase", "tema": "14", "secao": "sec-4-coledocolitíase" },
+    { "termo": "Glasgow", "tema": "09", "secao": "sec-4-escala-de-coma-de-glasgow" }
+  ]
+}
+```
+
+`secao` é opcional: sem ela, o destino é o topo do tema. O atalho só entra no **texto das seções de estudo** — quiz, alternativas, gabaritos, explicações, questões abertas e títulos nunca ganham link. Regras do autolink:
+
+- **palavra inteira** e sem diferenciar maiúsculas — `hérnia inguinal` não casa dentro de outra palavra;
+- **uma vez por termo por seção** (a primeira menção) e nunca na própria seção de destino;
+- nada de âncora aninhada: o autolink não entra em link existente, código ou título;
+- o clique rola até a seção de destino e a destaca; o `href` real (`#topic/NN/estudo`) preserva o **Voltar** do histórico quando o destino é outro tema. No mesmo tema e aba o hash não mudaria (e o `hashchange` não dispararia), então o destaque é aplicado direto.
+
+O build **recusa** o arquivo quando o schema está errado, quando o termo é ambíguo (um termo que é prefixo de palavra de outro, como `hérnia` diante de `hérnia inguinal`), quando o tema ou a seção de destino não existem no material, quando o destino é a bibliografia (`Fontes deste tema`) ou quando a entrada não gera nenhum atalho — mapa curado não tem destino inventado nem entrada morta. `node build-site.mjs --glossario` lista cada termo com o número de atalhos gerados.
+
 ### Auditoria automática
 
 Todo `node build-site.mjs` mede e imprime a saúde do quiz. Os limiares:
@@ -155,10 +177,12 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 ### Testes
 
 ```bash
-node build-site.mjs && node testes/nuvem.mjs
+node build-site.mjs && node testes/nuvem.mjs && node testes/glossario.mjs
 ```
 
 `testes/nuvem.mjs` roda o `index.html` gerado num contexto Node com DOM/localStorage mockados e cobre snapshot, mesclagem por timestamp, aplicação com validação de índices, bloqueio de troca de conta e as regras default-deny. Sem argumento, ele testa **todas as áreas geradas** (cada pasta de primeiro nível com `index.html`), uma por processo; com argumento, testa só os arquivos indicados. O teste assume o padrão do banco: ao menos 6 questões abertas e 3 de quiz no primeiro tema. Testes que dependem de rede/CDN e de duas contas reais ficam no roteiro manual abaixo.
+
+`testes/glossario.mjs` confere os atalhos do glossário no artefato gerado: destino existente, casamento como palavra inteira, uma menção por termo por seção, ausência de âncora aninhada, zero atalho em quiz/alternativas/gabaritos/explicações/questões abertas e o mapa curado sem termo ambíguo ou sem uso. Um segundo bloco renderiza o tema num DOM mockado e verifica o Estudo com atalho, o Quiz e as Abertas sem atalho, e o destaque da seção de destino quando o clique cai no mesmo tema e aba (hash que não muda).
 
 ### Roteiro manual (2 contas)
 

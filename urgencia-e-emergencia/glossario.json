@@ -1,0 +1,25 @@
+{
+  "termos": [
+    { "termo": "DEA", "tema": "01", "secao": "sec-4-desfibrilação-precoce-e-dea" },
+    { "termo": "capnografia", "tema": "01", "secao": "sec-5-capnografia-medindo-a-rcp-em-tempo-real" },
+    { "termo": "via aérea avançada", "tema": "02", "secao": "sec-5-via-aérea-avançada-e-ventilação" },
+    { "termo": "amiodarona", "tema": "03", "secao": "sec-2-drogas-de-emergência" },
+    { "termo": "lidocaína", "tema": "03", "secao": "sec-2-drogas-de-emergência" },
+    { "termo": "marcapasso", "tema": "03", "secao": "sec-1-terapias-elétricas" },
+    { "termo": "adenosina", "tema": "05", "secao": "sec-3-qrs-estreito-regular-manobras-vagais-e-adenosina" },
+    { "termo": "cardioversão sincronizada", "tema": "05", "secao": "sec-2-instável-cardioversão-sincronizada" },
+    { "termo": "fibrilação atrial", "tema": "05", "secao": "sec-4-qrs-estreito-irregular-fa-flutter-e-mat" },
+    { "termo": "manobras vagais", "tema": "05", "secao": "sec-3-qrs-estreito-regular-manobras-vagais-e-adenosina" },
+    { "termo": "causas reversíveis", "tema": "06", "secao": "sec-9-causas-reversíveis-os-hs-e-ts" },
+    { "termo": "hipercalemia", "tema": "06", "secao": "sec-9-causas-reversíveis-os-hs-e-ts" },
+    { "termo": "vasopressor", "tema": "06", "secao": "sec-3-hemodinâmica" },
+    { "termo": "IAM", "tema": "07", "secao": "sec-8-iam-a-classificação-que-mudou-em-2026" },
+    { "termo": "SCA", "tema": "07", "secao": "sec-1-o-espectro-da-sca" },
+    { "termo": "AVC", "tema": "08", "secao": "sec-1-conceito-e-reconhecimento" },
+    { "termo": "NIHSS", "tema": "08", "secao": "sec-3-nihss" },
+    { "termo": "Cincinnati", "tema": "09", "secao": "sec-5-escala-de-cincinnati" },
+    { "termo": "Glasgow", "tema": "09", "secao": "sec-4-escala-de-coma-de-glasgow" },
+    { "termo": "naloxona", "tema": "10", "secao": "sec-3-antídotos-prioritários" },
+    { "termo": "TEP", "tema": "12", "secao": "sec-1-a-classificação-que-mudou-o-tep" }
+  ]
+}
