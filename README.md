@@ -1,12 +1,15 @@
-# 🚑 Material de Estudos — Urgência e Emergência
+# 🚑 Material de Estudos — Urgência e Emergência e Cirurgia
 
-Material de estudo de Urgência e Emergência (medicina, 5º ano), com site estático gerado a partir dos markdowns: resumos, quiz de múltipla escolha, questões abertas, simulado, revisão espaçada e PWA instalável.
+Material de estudo de medicina com site estático gerado a partir dos markdowns: resumos, quiz de múltipla escolha, questões abertas, simulado, revisão espaçada e PWA instalável.
 
 | Área | Temas | Questões abertas | Quiz |
 |---|---|---|---|
 | [Urgência e Emergência](urgencia-e-emergencia/) | 12 | 88 | 96 |
+| [Cirurgia](cirurgia/) | 32 | 224 | 256 |
 
-> O material está completo: **12 temas**, **88 questões abertas** com resposta modelo e **96 questões de quiz** (8 por tema). O site é gerado por `node build-site.mjs` e publicado no GitHub Pages — veja [Como rodar local](#como-rodar-local) e [Publicar](#publicar).
+> O material de Urgência e Emergência está completo: **12 temas**, **88 questões abertas** com resposta modelo e **96 questões de quiz** (8 por tema). O site é gerado por `node build-site.mjs` e publicado no GitHub Pages — veja [Como rodar local](#como-rodar-local) e [Publicar](#publicar).
+
+> A trilha **Cirurgia** integra **32 temas**, **224 questões abertas** e **256 quiz**, com questões de autoria própria. Dos **69 PDFs locais**, **68** têm destino temático ou referência complementar e **1** permanece bloqueado: cirurgia cardíaca é agenda sem respostas. Não há pendência de redação por volume, mas há limites de fonte e cobertura seletiva — não é cobertura integral de cada página nem atualização clínica universal. Veja [`cirurgia/README.md`](cirurgia/README.md) e `_fontes-extraidas/cirurgia/00-matriz-cobertura.md`. PDFs e textos extraídos continuam fora do versionamento/publicação.
 
 ## Como funciona
 
@@ -16,6 +19,8 @@ Os arquivos `NN-*.md` são a fonte de verdade do conteúdo, e o `quiz.json` de c
 - `manifest.webmanifest`, `sw.js` e ícones PNG — camada opcional que torna o site instalável na tela de início e legível offline. Só entra em ação sob `http(s)`.
 
 Na raiz, um `index.html` é o hub que leva à área.
+
+Para acrescentar uma trilha: registre-a em `SITES` (no `build-site.mjs`, com pasta, título, emoji e cores) e crie a pasta com os `NN-*.md`, o `README.md` e o `quiz.json`. O card no hub, o site da área e o namespace de progresso saem sozinhos.
 
 **Os arquivos gerados nunca são editados à mão** — qualquer edição é sobrescrita no próximo build.
 
@@ -80,6 +85,8 @@ node build-site.mjs           # regenera o site
 ```
 
 `montar-quiz.mjs` valida o schema de cada fragmento, avisa quando um tema não tem 8 questões e recusa enunciados repetidos entre todos os fragmentos. É idempotente e não quebra se `_quiz-fragmentos/` estiver vazia (o `quiz.json` atual é mantido). Os fragmentos **não são versionados**: só o `quiz.json` montado entra no repositório.
+
+Fora de `urgencia-e-emergencia`, os fragmentos ficam em `_quiz-fragmentos/<area>/NN.json` e o comando recebe a área: `node montar-quiz.mjs cirurgia`. Sem argumento, ele continua montando `urgencia-e-emergencia/quiz.json` a partir de `_quiz-fragmentos/NN.json` (layout antigo). Fragmentos de uma área não são reaproveitados na outra.
 
 ### Balancear as posições
 
@@ -151,7 +158,7 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 node build-site.mjs && node testes/nuvem.mjs
 ```
 
-`testes/nuvem.mjs` roda o `index.html` gerado num contexto Node com DOM/localStorage mockados e cobre snapshot, mesclagem por timestamp, aplicação com validação de índices, bloqueio de troca de conta e as regras default-deny. Testes que dependem de rede/CDN e de duas contas reais ficam no roteiro manual abaixo.
+`testes/nuvem.mjs` roda o `index.html` gerado num contexto Node com DOM/localStorage mockados e cobre snapshot, mesclagem por timestamp, aplicação com validação de índices, bloqueio de troca de conta e as regras default-deny. Sem argumento, ele testa **todas as áreas geradas** (cada pasta de primeiro nível com `index.html`), uma por processo; com argumento, testa só os arquivos indicados. O teste assume o padrão do banco: ao menos 6 questões abertas e 3 de quiz no primeiro tema. Testes que dependem de rede/CDN e de duas contas reais ficam no roteiro manual abaixo.
 
 ### Roteiro manual (2 contas)
 

@@ -20,6 +20,14 @@ import { deflateSync } from 'node:zlib';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 
+// Cada entrada vira uma trilha independente: uma pasta com os NN-*.md, o
+// quiz.json e os arquivos gerados (index.html, manifest, sw, ícones), mais um
+// card no hub da raiz. O progresso de cada trilha é separado, porque o siteKey
+// (a pasta) entra na chave do localStorage e no documento da nuvem.
+//
+// `pendente: true` registra a trilha no hub antes de o material chegar: nada é
+// gerado para ela e o build só avisa. Não é para publicar conteúdo fictício —
+// remova a marca quando a pasta tiver os NN-*.md de verdade.
 const SITES = [
   {
     folder: 'urgencia-e-emergencia',
@@ -29,6 +37,15 @@ const SITES = [
     emoji: '🚑',
     accent: '#dc2626',
     accentDark: '#fca5a5',
+  },
+  {
+    folder: 'cirurgia',
+    title: 'Cirurgia',
+    short: 'Cirurgia',
+    icon: 'med',
+    emoji: '🔪',
+    accent: '#0d9488',
+    accentDark: '#5eead4',
   },
 ];
 
@@ -1019,7 +1036,21 @@ const errosAuditoria = [];
 
 function buildSite(site) {
   const dir = join(ROOT, site.folder);
-  const files = readdirSync(dir).filter((f) => /^\d{2}-.*\.md$/.test(f)).sort();
+  const arquivosMd = existsSync(dir) ? readdirSync(dir).filter((f) => /^\d{2}-.*\.md$/.test(f)) : [];
+  if (!arquivosMd.length) {
+    if (!site.pendente) {
+      throw new Error(
+        `${site.folder}: pasta sem temas NN-*.md — nada para gerar. ` +
+          'Escreva o conteúdo ou marque a trilha como pendente em SITES.'
+      );
+    }
+    console.warn(
+      `⚠ ${site.folder}: trilha registrada em SITES sem material (pasta ausente ou sem NN-*.md). ` +
+        'Nada foi gerado para esta trilha e o card do hub sai como "em preparação".'
+    );
+    return { pendente: true, topics: 0, totalQuestions: 0, totalQuiz: 0 };
+  }
+  const files = arquivosMd.sort();
 
   const linkMap = {};
   for (const f of files) linkMap[f] = f.slice(0, 2);
@@ -2738,7 +2769,7 @@ self.addEventListener('fetch', (e) => {
   }
   auditarQuiz(site.folder, quizBank).forEach((e) => errosAuditoria.push(`${site.folder}: ${e}`));
 
-  return { totalQuestions, totalQuiz, topics: topics.length };
+  return { pendente: false, totalQuestions, totalQuiz, topics: topics.length };
 }
 
 /* ================================ hub da raiz ================================ */
@@ -2746,6 +2777,18 @@ self.addEventListener('fetch', (e) => {
 function buildHub(stats) {
   const cards = SITES.map((s, i) => {
     const st = stats[i];
+    // Trilha registrada mas ainda sem material: o card é explícito sobre a
+    // ausência e não leva a lugar nenhum — nada de link quebrado nem de
+    // conteúdo de exemplo.
+    if (st.pendente) {
+      return `    <div class="hub-card pendente" style="--c:${s.accent};--cd:${s.accentDark}">
+      <span class="hub-top"><span class="hub-em">${s.emoji}</span><span class="hub-pill">em preparação</span></span>
+      <span class="hub-t">${s.title}</span>
+      <span class="hub-s">Trilha registrada; aguardando o material da disciplina para gerar resumos, questões abertas e quiz.</span>
+      <span class="hub-meta">Sem conteúdo publicado ainda</span>
+      <span class="hub-go">Indisponível por enquanto</span>
+    </div>`;
+    }
     return `    <a class="hub-card" href="./${s.folder}/" style="--c:${s.accent};--cd:${s.accentDark}">
       <span class="hub-top"><span class="hub-em">${s.emoji}</span><span class="hub-pill">${st.topics} ${st.topics === 1 ? 'tema' : 'temas'}</span></span>
       <span class="hub-t">${s.title}</span>
@@ -2790,6 +2833,9 @@ h1{font-size:clamp(1.8em,5vw,2.75em);line-height:1.15;margin:.3em 0 .25em;text-a
 @media (prefers-color-scheme:dark){.hub-card{border-top-color:var(--cd);box-shadow:0 18px 45px rgba(0,0,0,.24)}}
 @media (hover:hover){.hub-card:hover{transform:translateY(-4px);box-shadow:0 24px 54px rgba(15,23,42,.14)}}
 .hub-card:active{transform:scale(.99)}
+.hub-card.pendente{cursor:default;border-style:dashed;opacity:.72;box-shadow:none}
+@media (hover:hover){.hub-card.pendente:hover{transform:none;box-shadow:none}}
+.hub-card.pendente .hub-go{color:var(--muted)}
 .hub-top{display:flex;justify-content:space-between;align-items:center}.hub-em{font-size:2.15em}
 .hub-pill{font-size:.72em;font-weight:700;color:var(--muted);border:1px solid var(--border);border-radius:99px;padding:5px 9px}
 .hub-t{font-size:1.35em;font-weight:800;display:block;margin-top:18px}

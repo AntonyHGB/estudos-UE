@@ -2,18 +2,53 @@
 //
 // Uso:
 //   node build-site.mjs
-//   node testes/nuvem.mjs [caminho/index.html]
+//   node testes/nuvem.mjs [caminho/index.html ...]
+//
+// Sem argumento, testa todas as áreas geradas (cada pasta de primeiro nível que
+// tenha um index.html); com argumento, testa só os arquivos indicados. Como o
+// app roda no contexto atual (vm.runInThisContext), cada área é testada num
+// processo próprio: dois aplicativos no mesmo processo colidiriam nos mocks e
+// nos `const` do script embutido.
 //
 // Sem dependências: extrai o script do HTML, roda num contexto vm com DOM e
 // localStorage mockados e exercita as funções puras de snapshot/mesclagem/aplicação.
 // Não toca a rede: o SDK do Firebase só é importado se explicitamente chamado,
-// e o teste garante que, sem config, a aba Nuvem não tenta nada.
-import { readFileSync, existsSync } from 'node:fs';
+// e o teste garante que, sem config, a aba Nuvem não tenta nada. É um teste
+// local — passar aqui não prova que a nuvem funciona.
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
-const file = process.argv[2] || fileURLToPath(new URL('../urgencia-e-emergencia/index.html', import.meta.url));
+const RAIZ = fileURLToPath(new URL('..', import.meta.url));
+const alvos = process.argv.slice(2);
+
+if (!alvos.length) {
+  const areas = readdirSync(RAIZ, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !e.name.startsWith('.') && !e.name.startsWith('_'))
+    .map((e) => e.name)
+    .filter((nome) => existsSync(join(RAIZ, nome, 'index.html')))
+    .sort();
+  if (!areas.length) {
+    console.error('Nenhuma área gerada (pasta de primeiro nível com index.html). Rode "node build-site.mjs" antes.');
+    process.exit(2);
+  }
+  alvos.push(...areas.map((nome) => join(RAIZ, nome, 'index.html')));
+}
+
+if (alvos.length > 1) {
+  console.log(`testes/nuvem.mjs: ${alvos.length} áreas — ${alvos.map((a) => a.replace(RAIZ, '')).join(', ')}`);
+  let falhou = false;
+  for (const alvo of alvos) {
+    const r = spawnSync(process.execPath, [fileURLToPath(import.meta.url), alvo], { stdio: 'inherit' });
+    if (r.status !== 0) falhou = true;
+  }
+  process.exit(falhou ? 1 : 0);
+}
+
+const file = alvos[0] || fileURLToPath(new URL('../urgencia-e-emergencia/index.html', import.meta.url));
 const html = readFileSync(file, 'utf8');
 
 const mData = html.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/);
@@ -61,8 +96,8 @@ globalThis.localStorage = {
   removeItem(k) { store.delete(k); },
 };
 globalThis.location = {
-  protocol: 'http:', origin: 'http://localhost', pathname: '/urgencia-e-emergencia/',
-  search: '', hash: '#home', href: 'http://localhost/urgencia-e-emergencia/',
+  protocol: 'http:', origin: 'http://localhost', pathname: '/' + siteData.siteKey + '/',
+  search: '', hash: '#home', href: 'http://localhost/' + siteData.siteKey + '/',
 };
 globalThis.history = { replaceState() {} };
 Object.defineProperty(globalThis, 'navigator', { value: {}, configurable: true, writable: true });

@@ -1,29 +1,57 @@
-// montar-quiz.mjs — monta urgencia-e-emergencia/quiz.json a partir dos fragmentos.
+// montar-quiz.mjs — monta o quiz.json de uma área a partir dos fragmentos.
 //
-// Uso: node montar-quiz.mjs
+// Uso: node montar-quiz.mjs [area]
 //
-// Cada arquivo _quiz-fragmentos/NN.json contém um array com as 8 questões de um
-// tema, no mesmo formato do quiz.json (n, q, a[4], c, e). O script:
+//   node montar-quiz.mjs                 -> urgencia-e-emergencia/quiz.json (comando original)
+//   node montar-quiz.mjs cirurgia        -> cirurgia/quiz.json
+//
+// Cada arquivo _quiz-fragmentos/<area>/NN.json contém um array com as 8 questões
+// de um tema, no mesmo formato do quiz.json (n, q, a[4], c, e). A área original
+// (urgencia-e-emergencia) também aceita o layout antigo, com os fragmentos
+// direto em _quiz-fragmentos/NN.json: o comando sem argumento não mudou. O script:
 //   1. valida o schema de cada questão (nível, enunciado, 4 alternativas, índice
 //      da correta de 0 a 3, explicação) e avisa quando um tema vem com uma
 //      contagem diferente de 8 questões;
 //   2. recusa enunciados repetidos entre TODOS os fragmentos (o build também
 //      recusaria);
-//   3. escreve urgencia-e-emergencia/quiz.json com as chaves em ordem numérica.
+//   3. escreve <area>/quiz.json com as chaves em ordem numérica.
 //
 // É idempotente: se o conteúdo gerado for igual ao arquivo atual, não escreve
 // nada. Sem fragmentos, não faz nada e sai com sucesso — assim o build continua
 // funcionando antes de o conteúdo real começar a chegar.
 //
-// Depois de montar, rode "node balancear-quiz.mjs urgencia-e-emergencia" e
+// Depois de montar, rode "node balancear-quiz.mjs <area>" e
 // "node build-site.mjs".
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
-const FRAGMENTOS = join(ROOT, '_quiz-fragmentos');
-const DESTINO = join(ROOT, 'urgencia-e-emergencia', 'quiz.json');
+
+// A área padrão preserva o comando original; qualquer outra área precisa do
+// próprio diretório de fragmentos (senão o 01.json de uma área cairia na outra).
+const AREA_PADRAO = 'urgencia-e-emergencia';
+const AREA = (process.argv[2] || AREA_PADRAO).replace(/[/\\]+$/, '');
+if (AREA === '.' || AREA === '..' || /[/\\]/.test(AREA)) {
+  console.error(`✖ Área "${AREA}": informe só o nome da pasta na raiz (ex.: cirurgia).`);
+  process.exit(1);
+}
+const DESTINO = join(ROOT, AREA, 'quiz.json');
+const DIR_AREA = join(ROOT, AREA);
+const DIR_FRAGMENTOS_AREA = join(ROOT, '_quiz-fragmentos', AREA);
+
+if (!existsSync(DIR_AREA)) {
+  console.error(`✖ Área "${AREA}": pasta ${AREA}/ não existe na raiz do projeto.`);
+  process.exit(1);
+}
+if (AREA !== AREA_PADRAO && !existsSync(DIR_FRAGMENTOS_AREA)) {
+  console.error(
+    `✖ Área "${AREA}": crie _quiz-fragmentos/${AREA}/ com um NN.json por tema.\n` +
+      `   (Os fragmentos de ${AREA_PADRAO} não são reaproveitados entre áreas.)`
+  );
+  process.exit(1);
+}
+const FRAGMENTOS = existsSync(DIR_FRAGMENTOS_AREA) ? DIR_FRAGMENTOS_AREA : join(ROOT, '_quiz-fragmentos');
 const POR_TEMA = 8;
 
 const NIVEIS = ['🟢', '🟡', '🔴'];
@@ -41,7 +69,7 @@ const arquivos = existsSync(FRAGMENTOS)
   : [];
 
 if (!arquivos.length) {
-  console.log('Nenhum fragmento em _quiz-fragmentos/ — quiz.json mantido como está.');
+  console.log(`Nenhum fragmento em _quiz-fragmentos/${AREA}/ — ${AREA}/quiz.json mantido como está.`);
   process.exit(0);
 }
 
@@ -106,9 +134,9 @@ const atual = existsSync(DESTINO) ? readFileSync(DESTINO, 'utf8') : '';
 
 const total = Object.values(ordenado).reduce((a, qs) => a + qs.length, 0);
 if (json === atual) {
-  console.log(`✔ quiz.json já está em dia — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
+  console.log(`✔ ${AREA}/quiz.json já está em dia — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
 } else {
   writeFileSync(DESTINO, json, 'utf8');
-  console.log(`✔ quiz.json escrito — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
-  console.log('  Rode "node balancear-quiz.mjs urgencia-e-emergencia" e "node build-site.mjs".');
+  console.log(`✔ ${AREA}/quiz.json escrito — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
+  console.log(`  Rode "node balancear-quiz.mjs ${AREA}" e "node build-site.mjs".`);
 }
