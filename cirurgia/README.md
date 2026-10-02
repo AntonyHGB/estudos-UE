@@ -44,18 +44,18 @@ Os 46 decks são slides, sem referência bibliográfica formal: onde um número 
 
 ## Temas e bancos integrados localmente (32)
 
-**224 questões abertas e 656 questões de quiz** no build local; sem deploy nesta rodada. Os bancos estão
+**224 questões abertas e 837 questões de quiz** no build local; sem deploy nesta rodada. Os bancos estão
 assim distribuídos:
 
 | Temas | Questões no banco | Situação |
 |---|---:|---|
 | 01–08 | 221 | Expandidos (+157 sobre o publicado) |
-| 09–16 | 64 | **Pendente**: 8 questões originais por tema, mantidas sem alteração após recusa do provider; sem reenvio ou nova geração |
+| 09–16 | 245 | Expandidos: 181 questões novas; prefixo publicado preservado, salvo correções controladas em 12/Q8 e 15/Q2 |
 | 17–24 | 206 | Expandidos (+142 sobre o publicado) |
 | 25–32 | 165 | Expandidos (+101 sobre o publicado) |
-| **Total** | **656** | 24 temas expandidos; 8 temas aguardam decisão sobre a pendência 09–16 |
+| **Total** | **837** | 32 temas com expansão integrada |
 
-⚠️ As correções dos fragmentos finais foram integradas ao banco local sem alterar as questões publicadas. Esta rodada não valida clinicamente as fontes primárias; referências didáticas e limites de cobertura permanecem explícitos. Os fragmentos pendentes 09–16 não foram lidos nem integrados.
+⚠️ A integração 09–16 preserva todas as questões publicadas, exceto duas alterações autorizadas: 12/Q8 (investigação de coledocolitíase oculta) e a alternativa distratora de 15/Q2. O progresso antigo desses dois itens é invalidado seletivamente e preservado em backup local; não é uma validação clínica universal das fontes primárias. Referências didáticas e limites de cobertura permanecem explícitos.
 
 As 224 questões abertas continuam em 7 por tema. As citações “slide N” nos decks correspondem à **página N do
 PDF local**, não à paginação interna do compilado; os caminhos dos arquivos estão em cada tema.

@@ -1450,9 +1450,31 @@ function buildSite(site) {
   const contentHash = fnv1a(contentKey) & 0xffff;
   const strongQuizHash = quizHash(topics);
   const quizCompat = lerCompatQuizAnterior(site, topics, fingerprint, contentHash);
+  const quizAnswerRevisionSpec = site.folder === 'cirurgia' ? {
+    '12:7': { revision:'cirurgia-quiz-corrections-2026-10-02-v1', oldHash:'8265e9f880ac4140c90d73eead3f6df54b871b2908956d5a401442ae07e696f4', newHash:'a3bcbb96b1b84896eab6fa3c16bad6efb5125c7d3673072d5ba01e8bac414e1f' },
+    '15:1': { revision:'cirurgia-quiz-corrections-2026-10-02-v1', oldHash:'e1d3d1da3859c4f2596ad2c1380bdfc777f8b76c6bab8e328c3420f23e3b597e', newHash:'f0a6952f1c156e3d59861f6b7b1bccf99421b0f27aab274bac73e49cc7218234' },
+  } : {};
+  const hashQuestaoQuiz = (q) => createHash('sha256').update(JSON.stringify([q.n, q.q, q.a, q.c, q.e])).digest('hex');
+  const quizAnswerRevisions = {};
+  Object.keys(quizAnswerRevisionSpec).forEach((ref) => {
+    const [tema, indice] = ref.split(':');
+    const target = quizBank[tema]?.[Number(indice)];
+    const expected = quizAnswerRevisionSpec[ref];
+    // Bancos reduzidos dos testes isolados omitem questões sem correspondente;
+    // a trilha completa de produção deve conter ambos os alvos exatos.
+    if (!target) {
+      if (site.folder === 'cirurgia' && topics.length === 32) throw new Error(`Migração de progresso ${ref} recusada: alvo ausente na trilha completa.`);
+      return;
+    }
+    if (hashQuestaoQuiz(target) !== expected.newHash) throw new Error(`Migração de progresso ${ref} recusada: SHA-256 [n,q,a,c,e] inesperado.`);
+    quizAnswerRevisions[ref] = expected.revision;
+  });
+  if (site.folder === 'cirurgia' && topics.length === 32 && Object.keys(quizAnswerRevisions).length !== 2)
+    throw new Error('Migrações de progresso da cirurgia exigem exatamente os dois alvos publicados.');
 
   const data = {
     siteKey: site.folder,
+    quizAnswerRevisions: Object.fromEntries(Object.entries(quizAnswerRevisions)),
     title: site.title,
     short: site.short,
     emoji: site.emoji,
@@ -1510,10 +1532,12 @@ var SKEY = SKEY_BASE;
 var LOCAL_UID = null;
 function usarProgressoUid(uid){
   uid = uid || null;
-  if (LOCAL_UID === uid) return;
-  LOCAL_UID = uid;
-  SKEY = SKEY_BASE + (uid ? ':uid:' + uid : '');
-  ordemRevisao = LS.get(SKEY + ':ordem') === '1';
+  if (LOCAL_UID !== uid){
+    LOCAL_UID = uid;
+    SKEY = SKEY_BASE + (uid ? ':uid:' + uid : '');
+    ordemRevisao = LS.get(SKEY + ':ordem') === '1';
+  }
+  return migrarRespostasQuizCorrigidas();
 }
 const LETTERS = ['A','B','C','D','E'];
 
@@ -1537,6 +1561,7 @@ const LS = (function(){
 
 if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch(e){} }
 
+/* BEGIN QUIZ REVISION RUNTIME */
 /* Carimbo de tempo por item. Permite mesclar o progresso de dois aparelhos sem
    que um sobrescreva o outro às cegas: na hora de sincronizar, a versão mais
    nova de cada marcação/resposta vence. Fica num único mapa para não poluir o
@@ -1558,9 +1583,73 @@ function toggleOrdem(){
 function getMark(t, i){ return LS.get(SKEY + ':' + t + ':' + i) || ''; }
 function setMarkRaw(t, i, v){ var k = SKEY + ':' + t + ':' + i; if (v) LS.set(k, v); else LS.del(k); }
 function setMark(t, i, v){ setMarkRaw(t, i, v); tsSet('m:' + t + ':' + i, Date.now()); }
-function getQuizAns(t, i){ var v = LS.get(SKEY + ':quiz:v3:' + t + ':' + i); return v === null ? null : +v; }
-function setQuizAnsRaw(t, i, v){ LS.set(SKEY + ':quiz:v3:' + t + ':' + i, String(v)); }
-function setQuizAns(t, i, v){ setQuizAnsRaw(t, i, v); tsSet('q:' + t + ':' + i, Date.now()); }
+function revisaoRespostaQuiz(t, i){ return DATA.quizAnswerRevisions && DATA.quizAnswerRevisions[t + ':' + i] || ''; }
+function quizMigrationStateKey(revision, ref){ return SKEY + ':quiz:migration-state:' + revision + ':' + ref; }
+function quizStoredRecord(t, i){
+  var raw = LS.get(SKEY + ':quiz:v3:' + t + ':' + i);
+  if (raw === null) return null;
+  try { var o = JSON.parse(raw); return o && typeof o === 'object' ? o : null; } catch(e){ return null; }
+}
+function quizStoredRevision(t, i){ var o = quizStoredRecord(t, i); return o && typeof o.r === 'string' ? o.r : ''; }
+function quizStoredAt(t, i){ var o = quizStoredRecord(t, i); return o && Number.isFinite(+o.at) ? +o.at : 0; }
+function validarBackupQuizMigracao(raw, revision, ref){
+  try {
+    var b = JSON.parse(raw);
+    return !!b && b.version === revision && b.item === ref && !!b.prior &&
+      (b.prior.answer === null || typeof b.prior.answer === 'string') &&
+      (b.prior.timestamp === null || (typeof b.prior.timestamp === 'number' && Number.isFinite(b.prior.timestamp) && b.prior.timestamp >= 0));
+  } catch(e){ return false; }
+}
+function gravarVerificado(key, value){ LS.set(key, value); return LS.get(key) === value; }
+function gravarTombstoneQuiz(t, i, at){
+  var ts = tsMap(); ts['q:' + t + ':' + i] = at;
+  var raw = JSON.stringify(ts);
+  LS.set(SKEY + ':ts', raw);
+  return LS.get(SKEY + ':ts') === raw;
+}
+function migrarRespostasQuizCorrigidas(){
+  var pronta = true;
+  Object.keys(DATA.quizAnswerRevisions || {}).forEach(function(ref){
+    var p = ref.split(':'), t = p[0], i = +p[1], revision = DATA.quizAnswerRevisions[ref];
+    var marker = quizMigrationStateKey(revision, ref), backupKey = SKEY + ':quiz:migration-backup:' + revision + ':' + ref;
+    if (LS.get(marker) === revision) return;
+    var answerKey = SKEY + ':quiz:v3:' + t + ':' + i;
+    var timeKey = SKEY + ':ts', times = {};
+    try { times = JSON.parse(LS.get(timeKey) || '{}') || {}; } catch(e) { times = {}; }
+    var oldRaw = LS.get(answerKey), prior = { answer: oldRaw, timestamp: times['q:' + t + ':' + i] || null };
+    var backup = LS.get(backupKey);
+    if (backup === null){
+      backup = JSON.stringify({ version: revision, item: ref, prior: prior });
+      if (!gravarVerificado(backupKey, backup)){ pronta = false; return; }
+    }
+    if (!validarBackupQuizMigracao(backup, revision, ref)){ pronta = false; return; }
+    if (!gravarVerificado(marker, 'pending:' + revision)){ pronta = false; return; }
+    // Respostas novas são um único registro JSON com revisão, para que reloads
+    // nunca confundam uma escrita recente com a resposta legada a invalidar.
+    var fresh = quizStoredRevision(t, i) === revision;
+    if (!fresh){
+      LS.del(answerKey);
+      if (LS.get(answerKey) !== null){ pronta = false; return; }
+      if (!gravarTombstoneQuiz(t, i, Date.now())){ pronta = false; return; }
+    }
+    if (!gravarVerificado(marker, revision)) pronta = false; // pending permite repetir com segurança
+  });
+  return pronta;
+}
+function getQuizAns(t, i){
+  var raw = LS.get(SKEY + ':quiz:v3:' + t + ':' + i), revision = revisaoRespostaQuiz(t, i);
+  if (raw === null) return null;
+  if (revision){ var record = quizStoredRecord(t, i); return record && record.r === revision && Number.isInteger(record.v) ? record.v : null; }
+  return +raw;
+}
+function setQuizAnsRaw(t, i, v, at){
+  var revision = revisaoRespostaQuiz(t, i), key = SKEY + ':quiz:v3:' + t + ':' + i;
+  var value = revision ? JSON.stringify({ v:v, r:revision, at:+at || Date.now() }) : String(v);
+  LS.set(key, value);
+  return LS.get(key) === value;
+}
+function setQuizAns(t, i, v){ var at = Date.now(); setQuizAnsRaw(t, i, v, at); tsSet('q:' + t + ':' + i, at); }
+/* END QUIZ REVISION RUNTIME */
 function clearQuiz(t){
   var top = DATA.topics.find(function(x){ return x.id === t; });
   if (top) top.quiz.forEach(function(_, i){ LS.del(SKEY + ':quiz:v3:' + t + ':' + i); tsSet('q:' + t + ':' + i, Date.now()); });
@@ -2002,7 +2091,7 @@ function nuvemAlternarSenha(botao){
   campo.focus();
 }
 function nuvemAgendarBoot(){
-  if (!fbConfigurado()) { LOCAL_READY = true; return; }
+  if (!fbConfigurado()) { usarProgressoUid(null); LOCAL_READY = true; return; }
   if (CLOUD_BOOT) return;
   CLOUD_BOOT = true;
   nuvemBoot();
@@ -2081,6 +2170,7 @@ async function nuvemVerificar(){
   nuvemRedraw();
 }
 
+/* BEGIN QUIZ REVISION CLOUD RUNTIME */
 /* --- progresso: snapshot local, mesclagem e aplicação (funções puras) --- */
 function localProgress(){
   var marks = {}, quiz = {}, rev = {};
@@ -2091,9 +2181,10 @@ function localProgress(){
       else if (at) marks[k] = { v:'', at:at }; // tombstone: item limpo de propósito
     });
     t.quiz.forEach(function(_, i){
-      var k = t.id + ':' + i, a = getQuizAns(t.id, i), at = tsGet('q:' + k);
-      if (a !== null) quiz[k] = { v:a, at:at };
-      else if (at) quiz[k] = { v:-1, at:at };
+      var k = t.id + ':' + i, a = getQuizAns(t.id, i), at = quizStoredAt(t.id, i) || tsGet('q:' + k);
+      var revision = revisaoRespostaQuiz(t.id, i);
+      if (a !== null) quiz[k] = { v:a, at:at, ...(revision ? { r:quizStoredRevision(t.id, i) } : {}) };
+      else if (at) quiz[k] = { v:-1, at:at, ...(revision ? { r:revision } : {}) };
     });
     var r = LS.get(SKEY + ':rev:' + t.id);
     if (r) rev[t.id] = +r;
@@ -2121,11 +2212,22 @@ function mergeRev(local, cloud){
   return out;
 }
 function mergeProgress(local, cloud){
+  var localQuiz = Object.assign({}, local && local.quiz || {}), cloudQuiz = Object.assign({}, cloud && cloud.quiz || {});
+  Object.keys(DATA.quizAnswerRevisions || {}).forEach(function(k){
+    var rev = DATA.quizAnswerRevisions[k];
+    var l = localQuiz[k], c = cloudQuiz[k], localFresh = l && l.r === rev, cloudFresh = c && c.r === rev;
+    if (!localFresh && !cloudFresh){
+      var at = Math.max(+((l && l.at) || 0), +((c && c.at) || 0));
+      var t = k.split(':');
+      localQuiz[k] = { v:-1, at:at || Date.now(), r:rev };
+    } else if (!localFresh) delete localQuiz[k];
+    if (!cloudFresh) delete cloudQuiz[k];
+  });
   return {
     v: CLOUD_SCHEMA, fp: DATA.fp, chash: DATA.chash,
     updatedAt: Math.max(+(local && local.updatedAt) || 0, +(cloud && cloud.updatedAt) || 0),
     marks: mergeEntryMap(local && local.marks, cloud && cloud.marks),
-    quiz: mergeEntryMap(local && local.quiz, cloud && cloud.quiz),
+    quiz: mergeEntryMap(localQuiz, cloudQuiz),
     rev: mergeRev(local && local.rev, cloud && cloud.rev)
   };
 }
@@ -2136,13 +2238,15 @@ function normalizarNuvem(raw){
     var e = raw.marks[k]; if (e && typeof e.v === 'string') out.marks[k] = { v:e.v, at:+e.at || 0 };
   });
   if (raw.quiz && typeof raw.quiz === 'object') Object.keys(raw.quiz).forEach(function(k){
-    var e = raw.quiz[k]; if (e && typeof e.v === 'number') out.quiz[k] = { v:e.v, at:+e.at || 0 };
+    var e = raw.quiz[k]; if (e && typeof e.v === 'number') out.quiz[k] = { v:e.v, at:+e.at || 0, ...(typeof e.r === 'string' ? { r:e.r } : {}) };
   });
   if (raw.rev && typeof raw.rev === 'object') Object.keys(raw.rev).forEach(function(k){
     var n = +raw.rev[k]; if (n) out.rev[k] = n;
   });
   return out;
 }
+/* END QUIZ REVISION CLOUD RUNTIME */
+/* BEGIN QUIZ REVISION APPLY RUNTIME */
 function aplicarProgressoNuvem(p){
   Object.keys(p.marks || {}).forEach(function(k){
     var e = p.marks[k], c = k.split(':'), tid = c[0], idx = +c[1];
@@ -2155,7 +2259,14 @@ function aplicarProgressoNuvem(p){
     var e = p.quiz[k], c = k.split(':'), tid = c[0], idx = +c[1];
     var t = DATA.topics.find(function(x){ return x.id === tid; });
     if (!t || !(idx >= 0) || idx >= t.quiz.length) return;
-    if (e.v >= 0 && e.v < t.quiz[idx].a.length) setQuizAnsRaw(tid, idx, e.v);
+    var revision = revisaoRespostaQuiz(tid, idx);
+    if (revision && e.r !== revision){
+      if (quizStoredRevision(tid, idx) === revision) return; // legado cloud nunca apaga resposta local nova
+      LS.del(SKEY + ':quiz:v3:' + tid + ':' + idx);
+      gravarTombstoneQuiz(tid, idx, Date.now());
+      return;
+    }
+    if (e.v >= 0 && e.v < t.quiz[idx].a.length) setQuizAnsRaw(tid, idx, e.v, e.at);
     else LS.del(SKEY + ':quiz:v3:' + tid + ':' + idx);
     tsSet('q:' + k, +e.at || 0);
   });
@@ -2163,6 +2274,7 @@ function aplicarProgressoNuvem(p){
     if (DATA.topics.some(function(x){ return x.id === tid; })) LS.set(SKEY + ':rev:' + tid, String(+p.rev[tid] || 0));
   });
 }
+/* END QUIZ REVISION APPLY RUNTIME */
 function contarProgresso(p){
   var nm = 0, nq = 0;
   Object.keys((p && p.marks) || {}).forEach(function(k){ if (p.marks[k].v) nm++; });
@@ -2227,6 +2339,7 @@ async function nuvemPronto(){
 
 async function nuvemSincronizar(){
   if (!await nuvemPronto()) return;
+  if (!migrarRespostasQuizCorrigidas()){ CLOUD_MSG = { t:'err', m:'Migração seletiva de respostas sem backup local confirmado; sincronização bloqueada. Libere espaço e tente novamente.' }; nuvemRedraw(); return; }
   var uidDaOperacao = CLOUD_USER.uid;
   var epochDaOperacao = AUTH_EPOCH;
   var progressoCapturado = localProgress();
@@ -2281,6 +2394,7 @@ async function nuvemSincronizar(){
 }
 async function nuvemEnviar(){
   if (!await nuvemPronto()) return;
+  if (!migrarRespostasQuizCorrigidas()){ CLOUD_MSG = { t:'err', m:'Migração seletiva de respostas sem backup local confirmado; envio bloqueado. Libere espaço e tente novamente.' }; nuvemRedraw(); return; }
   var uidDaOperacao = CLOUD_USER.uid;
   var local = localProgress();
   var aviso = contaDiferente() ? 'Atenção: este navegador guarda progresso de outra conta. ' : '';
@@ -2295,6 +2409,7 @@ async function nuvemEnviar(){
 }
 async function nuvemBaixar(){
   if (!await nuvemPronto()) return;
+  if (!migrarRespostasQuizCorrigidas()){ CLOUD_MSG = { t:'err', m:'Migração seletiva de respostas sem backup local confirmado; download bloqueado. Libere espaço e tente novamente.' }; nuvemRedraw(); return; }
   var uidDaOperacao = CLOUD_USER.uid;
   var epochDaOperacao = AUTH_EPOCH;
   function operacaoAtual(){ return authAtual(epochDaOperacao, uidDaOperacao); }

@@ -13,15 +13,33 @@ const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const publicado = (path) => execFileSync('git', ['show', `HEAD:${path}`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 5e6 });
 const data = (html) => JSON.parse(html.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
 const areas = ['urgencia-e-emergencia', 'cirurgia'];
-let ue;
+const buildSource = read('build-site.mjs');
+const markupRuntime = buildSource.slice(buildSource.indexOf('function escapeHtml('), buildSource.indexOf('\nfunction escapeAttr(')) +
+  buildSource.slice(buildSource.indexOf('function inline('), buildSource.indexOf('\nfunction mdToHtml('));
+const markupContext = vm.createContext({});
+vm.runInContext(markupRuntime, markupContext);
+const renderInline = (text) => vm.runInContext(`inline(${JSON.stringify(text)}, null)`, markupContext);
+let ue, cirurgiaBancoBytes;
 for (const area of areas) {
-  assert.equal(read(`${area}/quiz.json`), publicado(`${area}/quiz.json`), `${area}: banco byte a byte preservado`);
   const before = data(publicado(`${area}/index.html`));
   const html = read(`${area}/index.html`), after = data(html);
-  assert.deepEqual(after.topics, before.topics, `${area}: todos os campos originais e estudos/abertas preservados`);
-  for (const key of ['fp', 'chash', 'quizHash', 'quizCompat']) assert.deepEqual(after[key], before[key], `${area}: ${key} preservado`);
-  if (area === 'cirurgia') assert.equal(after.quizNotas, undefined, 'nenhuma nota em Cirurgia');
-  else ue = { html, after, before };
+  const bankBytes = read(`${area}/quiz.json`), currentBank = JSON.parse(bankBytes);
+  if (area === 'urgencia-e-emergencia') {
+    assert.equal(bankBytes, publicado(`${area}/quiz.json`), 'UE: banco byte a byte preservado');
+    assert.deepEqual(after.topics, before.topics, 'UE: campos originais preservados');
+    for (const key of ['fp', 'chash', 'quizHash', 'quizCompat']) assert.deepEqual(after[key], before[key], `UE: ${key} preservado`);
+    ue = { html, after, before };
+  } else {
+    cirurgiaBancoBytes = bankBytes;
+    assert.equal(after.quizNotas, undefined, 'nenhuma nota em Cirurgia');
+    for (const tema of Object.keys(currentBank)) {
+      const topic = after.topics.find((t) => t.id === tema);
+      assert.ok(topic, `Cirurgia: tema ${tema} presente no HTML`);
+      assert.deepEqual(topic.quiz.map((q) => [q.n, q.q, q.a, q.c, q.e]),
+        currentBank[tema].map((q) => [q.n, renderInline(q.q), q.a.map(renderInline), q.c, renderInline(q.e)]),
+        `Cirurgia: dados gerados sincronizados para tema ${tema}`);
+    }
+  }
 }
 assert.deepEqual(Object.keys(ue.after.quizNotas), ['11:5']);
 const raw = JSON.parse(read('urgencia-e-emergencia/quiz-notas.json'));
@@ -107,4 +125,5 @@ run("DATA.quizNotas['11:5']={titulo:'<img src=x onerror=alert(1)>',nota:'<script
 const escaped = run("quizNotaHtml('11',5)");
 assert.ok(!escaped.includes('<img') && !escaped.includes('<script>'));
 assert.ok(escaped.includes('&lt;img') && escaped.includes('&lt;script&gt;'));
-console.log('quiz-notas: bancos/campos/hashes preservados; validação fechada; Quiz/Simulado/resultado/Revisar/busca; sessão/respostas retidas; texto escapado — PASS');
+assert.equal(read('cirurgia/quiz.json'), cirurgiaBancoBytes, 'teste de notas não escreve no banco integrado');
+console.log('quiz-notas: UE/banco e hashes preservados; Cirurgia/HTML sincronizados sem notas; validação fechada; Quiz/Simulado/resultado/Revisar/busca; sessão/respostas retidas; texto escapado — PASS');
