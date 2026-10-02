@@ -38,3 +38,5 @@ publicadas por tema, inclusive ordem das alternativas e gabarito; as questões n
 somente após esse prefixo. Isso descreve o estado local, não um deploy nem uma revisão clínica integral.
 
 ⚠️ As correções dos fragmentos finais foram integradas ao banco local; referências didáticas não equivalem a fontes primárias clinicamente validadas. A questão 6 do tema 11, já publicada, mantém a ambiguidade de conduta no loxoscelismo moderado por divergência entre fontes oficiais; o prefixo legado não foi alterado.
+
+UE11/Q6 tem uma ressalva editorial visível: **“Questão histórica — segundo o Ofício Circular nº 2/2014”**. Ela explicita a referência do gabarito e a divergência registrada no material local, sem apresentar protocolo único vigente nem afirmar nova consulta ao MS. A nota separada (`quiz-notas.json`) não altera o enunciado original, alternativas, gabarito, explicação, índices ou hashes de progresso/simulado.

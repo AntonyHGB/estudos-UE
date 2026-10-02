@@ -1200,6 +1200,41 @@ function validarQuiz(folder, quizBank, idsMd){
   if (erros.length) throw new Error(`${folder}: quiz inválido\n  - ${erros.join('\n  - ')}`);
 }
 
+// Notas editoriais não entram nos campos/hashes do quiz nem no progresso.
+// A identidade é o SHA-256 de [n,q,a,c,e] do banco, antes do inline.
+function carregarNotasQuiz(dir, folder, quizBank) {
+  const path = join(dir, 'quiz-notas.json');
+  if (!existsSync(path)) return {};
+  let raw;
+  try { raw = JSON.parse(readFileSync(path, 'utf8')); }
+  catch { throw new Error(`${folder}/quiz-notas.json: JSON inválido`); }
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) ||
+      Object.keys(raw).length !== 1 || !Array.isArray(raw.notas)) {
+    throw new Error(`${folder}/quiz-notas.json: esperado objeto com array notas`);
+  }
+  const notas = {};
+  raw.notas.forEach((nota, i) => {
+    const ref = `${folder}/quiz-notas.json notas[${i}]`;
+    if (!nota || typeof nota !== 'object' || Array.isArray(nota) ||
+        Object.keys(nota).sort().join(',') !== 'nota,questao,sha256,tema,titulo' ||
+        typeof nota.tema !== 'string' || !/^\d{2}$/.test(nota.tema) ||
+        !Number.isInteger(nota.questao) || nota.questao < 1 ||
+        typeof nota.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(nota.sha256) ||
+        typeof nota.titulo !== 'string' || !nota.titulo.trim() ||
+        typeof nota.nota !== 'string' || !nota.nota.trim()) {
+      throw new Error(`${ref}: schema inválido`);
+    }
+    const q = quizBank[nota.tema]?.[nota.questao - 1];
+    if (!q) throw new Error(`${ref}: tema/questão inexistente`);
+    const digest = createHash('sha256').update(JSON.stringify([q.n, q.q, q.a, q.c, q.e])).digest('hex');
+    if (digest !== nota.sha256) throw new Error(`${ref}: SHA-256 da questão diverge`);
+    const key = `${nota.tema}:${nota.questao - 1}`;
+    if (Object.prototype.hasOwnProperty.call(notas, key)) throw new Error(`${ref}: nota duplicada`);
+    notas[key] = { titulo: nota.titulo, nota: nota.nota };
+  });
+  return notas;
+}
+
 function auditarQuiz(folder, quizBank) {
   const semMarcacao = (s) => s.replace(/\*\*/g, '').replace(/`/g, '').replace(/\*/g, '');
   const avisos = [];
@@ -1359,6 +1394,7 @@ function buildSite(site) {
   }
   const idsMd = files.map((f) => f.slice(0, 2));
   validarQuiz(site.folder, quizBank, idsMd);
+  const quizNotas = carregarNotasQuiz(dir, site.folder, quizBank);
 
   // Duas fases: primeiro um parse sem autolink, só para conhecer as seções de
   // estudo de cada tema; o glossário é validado contra elas antes de valer.
@@ -1424,6 +1460,7 @@ function buildSite(site) {
     chash: contentHash,
     quizHash: strongQuizHash,
     quizCompat,
+    ...(Object.keys(quizNotas).length ? { quizNotas } : {}),
     firebase: firebaseConfig,
     firebaseSdk: FIREBASE_SDK_VERSION,
     topics: topics.map((t) => ({
@@ -2568,7 +2605,7 @@ function renderSimulado(){
       var marcou = s.resp[k], ok = marcou === o.q.c;
       h += '<div class="qz l-' + o.q.levelName + '">' +
            '<div class="qnum">' + (k+1) + ' · TEMA ' + ref[0] + ' · ' + o.q.n + ' · ' + (ok ? '✅ acertou' : '❌ errou') + '</div>' +
-           '<div class="qtext">' + o.q.q + '</div>';
+           quizNotaHtml(ref[0], ref[1]) + '<div class="qtext">' + o.q.q + '</div>';
       o.q.a.forEach(function(alt, j){
         var cls = 'alt locked' + (j === o.q.c ? ' correct' : (j === marcou ? ' wrong' : ' dim'));
         h += '<button type="button" class="' + cls + '" disabled><span class="letter">' + LETTERS[j] + '</span><span>' + alt + '</span></button>';
@@ -2594,7 +2631,7 @@ function renderSimulado(){
        '<button class="chip" onclick="if(confirm(\\'Descartar este simulado?\\')){simClear();renderSimulado()}">Sair</button></div>';
   h += '<div class="qz l-' + o.q.levelName + '">' +
        '<div class="qnum">' + o.q.n + ' · TEMA ' + ref[0] + '</div>' +
-       '<div class="qtext">' + o.q.q + '</div>';
+       quizNotaHtml(ref[0], ref[1]) + '<div class="qtext">' + o.q.q + '</div>';
   o.q.a.forEach(function(alt, j){
     h += '<button type="button" class="alt' + (s.resp[s.pos] === j ? ' escolhida' : '') + '" onclick="simEscolher(' + j + ')">' +
          '<span class="letter">' + LETTERS[j] + '</span><span>' + alt + '</span></button>';
@@ -2654,7 +2691,7 @@ function renderRevisar(){
         var q = t.quiz[r.i], ans = getQuizAns(r.t, r.i), acertou = ans === q.c;
         h += '<div class="qz l-' + q.levelName + '">' +
              '<div class="qnum">TEMA ' + r.t + ' · ' + q.n + (acertou ? ' · ✅ resolvido' : '') + '</div>' +
-             '<div class="qtext">' + q.q + '</div>';
+             quizNotaHtml(r.t, r.i) + '<div class="qtext">' + q.q + '</div>';
         q.a.forEach(function(alt, j){
           if (acertou){
             var cls = 'alt locked' + (j === q.c ? ' correct' : ' dim');
@@ -2722,8 +2759,10 @@ function idxBusca(){
                   titulo:semTags(c.titleHtml), texto:semTags(c.titleHtml + ' ' + c.bodyHtml) });
     });
     t.quiz.forEach(function(q, i){
+      var nota = (DATA.quizNotas || {})[t.id + ':' + i];
       _idx.push({ tid:t.id, tab:'quiz', tipo:'Quiz', foco:'qz-' + i,
-                  titulo:semTags(q.q), texto:semTags(q.q + ' ' + q.a.join(' · ') + ' ' + q.e) });
+                  titulo:(nota ? nota.titulo + ' — ' : '') + semTags(q.q),
+                  texto:(nota ? nota.titulo + ' ' + nota.nota + ' ' : '') + semTags(q.q + ' ' + q.a.join(' · ') + ' ' + q.e) });
     });
   });
   return _idx;
@@ -2869,12 +2908,17 @@ function renderQuiz(t){
   });
   return h;
 }
+function quizNotaHtml(tid, i){
+  var nota = (DATA.quizNotas || {})[tid + ':' + i];
+  if (!nota) return '';
+  return '<aside class="note warn quiz-nota"><strong>' + escHtml(nota.titulo) + '</strong><p>' + escHtml(nota.nota) + '</p></aside>';
+}
 function quizCardHtml(t, q, i){
   var ans = getQuizAns(t.id, i);
   var answered = ans !== null;
   var h = '<div class="qz l-' + q.levelName + '" id="qz-' + i + '">' +
           '<div class="qnum">QUESTÃO ' + (i+1) + ' DE ' + t.quiz.length + ' · ' + q.n + '</div>' +
-          '<div class="qtext">' + q.q + '</div>';
+          quizNotaHtml(t.id, i) + '<div class="qtext">' + q.q + '</div>';
   q.a.forEach(function(alt, j){
     var cls = 'alt';
     if (answered){

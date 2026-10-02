@@ -98,6 +98,8 @@ A idempotência de `--append` exige que o sufixo atual seja exatamente igual ao 
 
 ⚠️ Esta integração não é validação clínica das fontes primárias. Há conteúdo didático com limites explicitados nas explicações; a ambiguidade legada de UE tema 11, questão 6 (loxoscelismo moderado e divergência entre fontes oficiais) foi preservada no prefixo publicado, não corrigida nesta rodada.
 
+UE11/Q6 recebe agora uma **nota editorial de origem histórica**, em `urgencia-e-emergencia/quiz-notas.json`: “segundo o Ofício Circular nº 2/2014”, com a divergência registrada no material local. A nota aparece antes do enunciado no Quiz, Simulado, resultado e Revisar erros, e integra a busca. O build valida tema, número (começando em 1) e SHA-256 de `[n,q,a,c,e]` do banco; alvo inexistente, digest divergente ou nota duplicada falham. O texto é escapado, não aceita HTML. Nenhum campo original, gabarito, índice ou hash de quiz/progresso foi alterado; não houve nova consulta primária ao MS. Cirurgia 09–16 continua pendente, com oito questões por tema.
+
 O build registra um hash SHA-256 do quiz e carrega compatibilidades anteriores do `index.html` gerado/versionado. Só sessões que já guardam SHA-256 podem ser migradas após validação integral do prefixo; simulados legados sem esse digest **não são reinterpretados nem apagados**. Eles ficam preservados localmente, bloqueados com aviso, e só podem ser substituídos após confirmação e cópia local explícita. ⚠️ Não apague os `index.html` anteriores antes de gerar os novos nem entre expansões: eles carregam a cadeia de compatibilidade forte para versões publicadas.
 
 ⚠️ Progresso de quiz local/na nuvem ainda usa `fp/chash` de 16 bits e chaves por tema/índice; não tem prova SHA-256 por questão. Append-only mantém essas referências corretas. Uma reescrita/reordenação com índice ainda válido pode continuar associando progresso antigo por índice — o aviso de material alterado não prova que isso foi evitado. A sincronização não foi migrada nesta etapa.
@@ -197,6 +199,7 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 ```bash
 node build-site.mjs && node testes/nuvem.mjs && node testes/glossario.mjs
 node testes/quiz-append.mjs
+node testes/quiz-notas.mjs
 ```
 
 `testes/quiz-append.mjs` cria um Git fixture isolado e bancos artificiais em `/tmp/opencode`; verifica ciclos 8→30→40, limites por tema vindos do `HEAD`, preflight sem escrita parcial, questões abertas/progresso local-nuvem, migração de simulados somente com SHA-256 e retenção de sessões legadas sem digest. Não altera os bancos nem os sites reais.

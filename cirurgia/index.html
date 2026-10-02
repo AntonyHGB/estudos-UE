@@ -1436,7 +1436,7 @@ function renderSimulado(){
       var marcou = s.resp[k], ok = marcou === o.q.c;
       h += '<div class="qz l-' + o.q.levelName + '">' +
            '<div class="qnum">' + (k+1) + ' · TEMA ' + ref[0] + ' · ' + o.q.n + ' · ' + (ok ? '✅ acertou' : '❌ errou') + '</div>' +
-           '<div class="qtext">' + o.q.q + '</div>';
+           quizNotaHtml(ref[0], ref[1]) + '<div class="qtext">' + o.q.q + '</div>';
       o.q.a.forEach(function(alt, j){
         var cls = 'alt locked' + (j === o.q.c ? ' correct' : (j === marcou ? ' wrong' : ' dim'));
         h += '<button type="button" class="' + cls + '" disabled><span class="letter">' + LETTERS[j] + '</span><span>' + alt + '</span></button>';
@@ -1462,7 +1462,7 @@ function renderSimulado(){
        '<button class="chip" onclick="if(confirm(\'Descartar este simulado?\')){simClear();renderSimulado()}">Sair</button></div>';
   h += '<div class="qz l-' + o.q.levelName + '">' +
        '<div class="qnum">' + o.q.n + ' · TEMA ' + ref[0] + '</div>' +
-       '<div class="qtext">' + o.q.q + '</div>';
+       quizNotaHtml(ref[0], ref[1]) + '<div class="qtext">' + o.q.q + '</div>';
   o.q.a.forEach(function(alt, j){
     h += '<button type="button" class="alt' + (s.resp[s.pos] === j ? ' escolhida' : '') + '" onclick="simEscolher(' + j + ')">' +
          '<span class="letter">' + LETTERS[j] + '</span><span>' + alt + '</span></button>';
@@ -1522,7 +1522,7 @@ function renderRevisar(){
         var q = t.quiz[r.i], ans = getQuizAns(r.t, r.i), acertou = ans === q.c;
         h += '<div class="qz l-' + q.levelName + '">' +
              '<div class="qnum">TEMA ' + r.t + ' · ' + q.n + (acertou ? ' · ✅ resolvido' : '') + '</div>' +
-             '<div class="qtext">' + q.q + '</div>';
+             quizNotaHtml(r.t, r.i) + '<div class="qtext">' + q.q + '</div>';
         q.a.forEach(function(alt, j){
           if (acertou){
             var cls = 'alt locked' + (j === q.c ? ' correct' : ' dim');
@@ -1590,8 +1590,10 @@ function idxBusca(){
                   titulo:semTags(c.titleHtml), texto:semTags(c.titleHtml + ' ' + c.bodyHtml) });
     });
     t.quiz.forEach(function(q, i){
+      var nota = (DATA.quizNotas || {})[t.id + ':' + i];
       _idx.push({ tid:t.id, tab:'quiz', tipo:'Quiz', foco:'qz-' + i,
-                  titulo:semTags(q.q), texto:semTags(q.q + ' ' + q.a.join(' · ') + ' ' + q.e) });
+                  titulo:(nota ? nota.titulo + ' — ' : '') + semTags(q.q),
+                  texto:(nota ? nota.titulo + ' ' + nota.nota + ' ' : '') + semTags(q.q + ' ' + q.a.join(' · ') + ' ' + q.e) });
     });
   });
   return _idx;
@@ -1737,12 +1739,17 @@ function renderQuiz(t){
   });
   return h;
 }
+function quizNotaHtml(tid, i){
+  var nota = (DATA.quizNotas || {})[tid + ':' + i];
+  if (!nota) return '';
+  return '<aside class="note warn quiz-nota"><strong>' + escHtml(nota.titulo) + '</strong><p>' + escHtml(nota.nota) + '</p></aside>';
+}
 function quizCardHtml(t, q, i){
   var ans = getQuizAns(t.id, i);
   var answered = ans !== null;
   var h = '<div class="qz l-' + q.levelName + '" id="qz-' + i + '">' +
           '<div class="qnum">QUESTÃO ' + (i+1) + ' DE ' + t.quiz.length + ' · ' + q.n + '</div>' +
-          '<div class="qtext">' + q.q + '</div>';
+          quizNotaHtml(t.id, i) + '<div class="qtext">' + q.q + '</div>';
   q.a.forEach(function(alt, j){
     var cls = 'alt';
     if (answered){
