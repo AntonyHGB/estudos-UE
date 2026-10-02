@@ -6,10 +6,19 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # PRs obsoletas podem parar; não interromper publicação em andamento.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
+  quality:
     name: Build do site
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,13 +28,46 @@ jobs:
           node-version: "22"
       # build-site.mjs é Node puro, sem dependências.
       - run: node build-site.mjs
+      # Smoke do renderer real em DOM mínimo, sem rede/browser.
+      - run: node testes/smoke-site.mjs
       # Testes do núcleo de progresso na nuvem (rodam o HTML gerado sem rede).
       - run: node testes/nuvem.mjs
+      # Regressões dos recursos editoriais e da publicação incremental de quizzes.
+      - run: node testes/glossario.mjs
+      - run: node testes/quiz-append.mjs
+      - run: node testes/quiz-notas.mjs
       # Migração seletiva exercitada por runtime extraído e fixtures, sem bancos/HTML reais.
       - run: node testes/quiz-migracao.mjs
-      # Falha se os arquivos gerados commitados estiverem diferentes da fonte.
-      # Os PNGs são recomprimidos pelo zlib embutido no Node e mudam de bytes
-      # entre versões (ex.: 22.23.1 x 22.23.2) sem mudar o desenho; por isso a
-      # comparação os exclui e cobre HTML, JS e manifest.
+      # Confere allowlist e dependências estáticas necessárias ao site publicado.
+      - run: node testes/pages-artifact.mjs
+      # Falha se os artefatos gerados commitados divergirem da fonte.
+      # PNGs são recomprimidos pelo zlib do Node e podem mudar sem mudar o desenho.
       - name: Verificar drift dos arquivos gerados
-        run: git diff --exit-code -- . ':(exclude)*.png'
+        run: git diff --exit-code -- index.html urgencia-e-emergencia/index.html urgencia-e-emergencia/sw.js urgencia-e-emergencia/manifest.webmanifest cirurgia/index.html cirurgia/sw.js cirurgia/manifest.webmanifest
+      # Copia somente a lista estática explícita do helper, nunca o repositório inteiro.
+      - name: Preparar arquivos estáticos do Pages
+        if: github.event_name == 'push'
+        run: node scripts/prepare-pages-artifact.mjs "$RUNNER_TEMP/pages-site"
+      # O artifact só existe se todo o build, smoke e testes obrigatórios passarem.
+      - name: Preparar artifact do Pages
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/pages-site
+
+  deploy:
+    name: Publicar no GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar artifact aprovado
+        id: deployment
+        uses: actions/deploy-pages@v4

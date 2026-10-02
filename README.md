@@ -197,11 +197,15 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 ### Testes
 
 ```bash
-node build-site.mjs && node testes/nuvem.mjs && node testes/glossario.mjs
+node build-site.mjs && node testes/smoke-site.mjs && node testes/pages-artifact.mjs && node testes/nuvem.mjs && node testes/glossario.mjs
 node testes/quiz-migracao.mjs
 node testes/quiz-append.mjs
 node testes/quiz-notas.mjs
 ```
+
+`testes/smoke-site.mjs` executa o JavaScript real das páginas UE e Cirurgia num DOM mínimo de Node: confere trilha/cards e tema sem subtítulo, responde uma questão corretamente e verifica resultado/explicação. Não usa browser, rede, Firebase nem progresso real; é um smoke do renderer/runtime, não um teste de browser.
+
+`testes/pages-artifact.mjs` testa o preparo isolado do Pages artifact: exige os arquivos estáticos allowlisted, verifica os caminhos do hub, manifest e service worker e recusa qualquer arquivo extra. O conteúdo e o runtime já estão embutidos nos `index.html`; não são copiados fontes, bancos avulsos, scripts de build/teste, documentação nem `.git`.
 
 `testes/quiz-append.mjs` cria um Git fixture isolado e bancos artificiais em `/tmp/opencode`; verifica ciclos 8→30→40, limites por tema vindos do `HEAD`, preflight sem escrita parcial, questões abertas/progresso local-nuvem, migração de simulados somente com SHA-256 e retenção de sessões legadas sem digest. Não altera os bancos nem os sites reais.
 
@@ -221,19 +225,21 @@ node testes/quiz-notas.mjs
 
 ## Publicar
 
-O site é estático e vive em `https://antonyhgb.github.io/estudos-UE/`. Com GitHub Pages:
+O site é estático e vive em `https://antonyhgb.github.io/estudos-UE/`.
 
-```bash
-gh repo create estudos-UE --public --source=. --remote=origin --push
-gh api -X POST repos/:owner/estudos-UE/pages -f 'source[branch]=main' -f 'source[path]=/'
-```
+### Origem e gate de publicação
+
+O workflow local está preparado para publicar com GitHub Actions. Para ativá-lo, em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**. Até essa mudança remota, Pages ainda publica a branch `main` diretamente e pode fazê-lo mesmo quando o CI falha.
+
+Depois de ativado, `quality` gera o site, roda build/smoke/testes, verifica drift dos artefatos gerados e valida uma allowlist de 13 arquivos estáticos. Só então prepara o artifact do mesmo checkout/SHA; `deploy` tem `needs: quality` e publica esse artifact apenas em push para `main`. PRs rodam qualidade sem publicar. Esse gate protege a publicação, mas não impede merge de PR nem exige branch protection.
 
 As páginas trazem `<meta name="robots" content="noindex, nofollow">` — uma **solicitação** para que os buscadores não indexem as páginas. Isso **não é controle de acesso nem garantia**: o conteúdo continua acessível a quem tem o link, e um buscador pode ignorar a diretiva. Não use o repositório para material que não possa circular.
 
-Depois de qualquer alteração:
+Depois de qualquer alteração, rode os comandos da seção [Testes](#testes), revise `git status` e adicione somente os arquivos pretendidos (não use `git add -A` sem revisar os não rastreados):
 
 ```bash
-node build-site.mjs && git add -A && git commit -m "atualiza material" && git push
+node build-site.mjs
+# Revise o diff e faça git add somente dos arquivos pretendidos antes do commit/push.
 ```
 
-⚠️ O CI (`.github/workflows/ci.yml`) roda o build a cada push e falha se o HTML/JS/manifest commitado divergir da fonte. Rode o build antes de commitar.
+⚠️ O deploy gated só vale depois de selecionar GitHub Actions como origem do Pages. Enquanto a origem remota continuar como branch/pasta, a publicação não aguarda os testes.
