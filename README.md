@@ -225,11 +225,11 @@ node testes/quiz-notas.mjs
 
 ## Publicar
 
-O site é estático e vive em `https://antonyhgb.github.io/estudos-UE/`.
+O site é estático e vive em `https://antonyhgb.github.io/estudos-UE/`. A origem do GitHub Pages está configurada como **GitHub Actions**.
 
 ### Origem e gate de publicação
 
-O workflow local está preparado para publicar com GitHub Actions. Para ativá-lo, em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**. Até essa mudança remota, Pages ainda publica a branch `main` diretamente e pode fazê-lo mesmo quando o CI falha.
+O workflow `.github/workflows/ci.yml` publica com GitHub Actions. Em **Settings → Pages → Build and deployment → Source**, mantenha **GitHub Actions** selecionado; voltar à origem branch/pasta permitiria publicação fora dos gates.
 
 Depois de ativado, `quality` gera o site, roda build/smoke/testes, verifica drift dos artefatos gerados e valida uma allowlist de 13 arquivos estáticos. Só então prepara o artifact do mesmo checkout/SHA; `deploy` tem `needs: quality` e publica esse artifact apenas em push para `main`. PRs rodam qualidade sem publicar. Esse gate protege a publicação, mas não impede merge de PR nem exige branch protection.
 
@@ -242,4 +242,4 @@ node build-site.mjs
 # Revise o diff e faça git add somente dos arquivos pretendidos antes do commit/push.
 ```
 
-⚠️ O deploy gated só vale depois de selecionar GitHub Actions como origem do Pages. Enquanto a origem remota continuar como branch/pasta, a publicação não aguarda os testes.
+⚠️ O gate só vale enquanto GitHub Actions permanecer como origem do Pages. PRs executam os testes, mas não publicam; a dependência `deploy.needs: quality` bloqueia publicação com falha, sem configurar proteção de branch ou impedir merge.
