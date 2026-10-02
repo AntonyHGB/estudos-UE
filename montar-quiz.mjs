@@ -1,9 +1,10 @@
 // montar-quiz.mjs — monta o quiz.json de uma área a partir dos fragmentos.
 //
-// Uso: node montar-quiz.mjs [area]
+// Uso: node montar-quiz.mjs [--append] [area]
 //
 //   node montar-quiz.mjs                 -> urgencia-e-emergencia/quiz.json (comando original)
 //   node montar-quiz.mjs cirurgia        -> cirurgia/quiz.json
+//   node montar-quiz.mjs --append cirurgia -> acrescenta questões sem substituir as atuais
 //
 // Cada arquivo _quiz-fragmentos/<area>/NN.json contém um array com as 8 questões
 // de um tema, no mesmo formato do quiz.json (n, q, a[4], c, e). A área original
@@ -25,13 +26,21 @@
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
 // A área padrão preserva o comando original; qualquer outra área precisa do
 // próprio diretório de fragmentos (senão o 01.json de uma área cairia na outra).
 const AREA_PADRAO = 'urgencia-e-emergencia';
-const AREA = (process.argv[2] || AREA_PADRAO).replace(/[/\\]+$/, '');
+const args = process.argv.slice(2);
+const appendOnly = args.includes('--append');
+const areaArgs = args.filter((arg) => arg !== '--append');
+if (areaArgs.length > 1 || args.some((arg) => arg.startsWith('-') && arg !== '--append')) {
+  console.error('Uso: node montar-quiz.mjs [--append] [area]');
+  process.exit(1);
+}
+const AREA = (areaArgs[0] || AREA_PADRAO).replace(/[/\\]+$/, '');
 if (AREA === '.' || AREA === '..' || /[/\\]/.test(AREA)) {
   console.error(`✖ Área "${AREA}": informe só o nome da pasta na raiz (ex.: cirurgia).`);
   process.exit(1);
@@ -63,12 +72,87 @@ const erros = [];
 const avisos = [];
 const banco = {};
 const vistas = new Map();
+let bancoAtual = {};
+let bancoPublicado = {};
+
+function validarQuestao(q, ref) {
+  if (!q || !NIVEIS.includes(q.n)) erros.push(`${ref}: nível inválido (use 🟢, 🟡 ou 🔴)`);
+  if (!q || typeof q.q !== 'string' || !q.q.trim()) erros.push(`${ref}: enunciado vazio`);
+  if (!q || !Array.isArray(q.a) || q.a.length !== 4 || q.a.some((a) => typeof a !== 'string' || !a.trim()))
+    erros.push(`${ref}: precisa ter quatro alternativas não vazias`);
+  if (!q || !Number.isInteger(q.c) || q.c < 0 || q.c > 3) erros.push(`${ref}: índice da correta inválido`);
+  if (!q || typeof q.e !== 'string' || !q.e.trim()) erros.push(`${ref}: explicação vazia`);
+}
+
+function conteudoQuestao(q) {
+  if (!q || typeof q.n !== 'string' || typeof q.q !== 'string' || !Array.isArray(q.a) ||
+      q.a.length !== 4 || q.a.some((a) => typeof a !== 'string') ||
+      !Number.isInteger(q.c) || typeof q.e !== 'string') return null;
+  return JSON.stringify([q.n, q.q, q.a, q.c, q.e]);
+}
+
+if (appendOnly && existsSync(DESTINO)) {
+  try {
+    bancoAtual = JSON.parse(readFileSync(DESTINO, 'utf8'));
+    if (!bancoAtual || typeof bancoAtual !== 'object' || Array.isArray(bancoAtual)) {
+      erros.push(`${AREA}/quiz.json: a raiz atual precisa ser um objeto de temas`);
+      bancoAtual = {};
+    }
+  } catch (e) {
+    erros.push(`${AREA}/quiz.json atual: JSON inválido — ${e.message}`);
+    bancoAtual = {};
+  }
+  for (const [tema, questoes] of Object.entries(bancoAtual)) {
+    if (!/^\d{2}$/.test(tema) || !Array.isArray(questoes)) {
+      erros.push(`${AREA}/quiz.json: tema/lista inválida (${tema})`);
+      continue;
+    }
+    questoes.forEach((q, i) => {
+      const ref = `${AREA}/quiz.json tema ${tema} questão ${i + 1}`;
+      validarQuestao(q, ref);
+      if (q && typeof q.q === 'string' && q.q.trim()) {
+        const chave = normalizar(q.q);
+        if (vistas.has(chave)) erros.push(`${ref}: enunciado duplicado de ${vistas.get(chave)}`);
+        else vistas.set(chave, ref);
+      }
+    });
+  }
+}
+
+if (appendOnly) {
+  try {
+    bancoPublicado = JSON.parse(execFileSync('git', ['show', `HEAD:${AREA}/quiz.json`], {
+      cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+    }));
+    if (!bancoPublicado || typeof bancoPublicado !== 'object' || Array.isArray(bancoPublicado)) {
+      erros.push(`HEAD:${AREA}/quiz.json: banco publicado inválido`);
+      bancoPublicado = {};
+    }
+  } catch {
+    erros.push(`append-only: não foi possível ler HEAD:${AREA}/quiz.json; nada será escrito`);
+    bancoPublicado = {};
+  }
+  const temasPublicados = Object.keys(bancoPublicado).sort();
+  const temasAtuais = Object.keys(bancoAtual).sort();
+  if (temasAtuais.length < temasPublicados.length || temasPublicados.some((tema, i) => temasAtuais[i] !== tema) ||
+      temasPublicados.some((tema) => !Array.isArray(bancoPublicado[tema]) || !Array.isArray(bancoAtual[tema]) ||
+        bancoAtual[tema].length < bancoPublicado[tema].length ||
+        bancoPublicado[tema].some((q, i) => !conteudoQuestao(q) || !conteudoQuestao(bancoAtual[tema][i]) ||
+          conteudoQuestao(q) !== conteudoQuestao(bancoAtual[tema][i])))) {
+    erros.push('append-only: quiz.json atual diverge do prefixo publicado em HEAD (n/q/a/c/e ou ordem)');
+  }
+}
 
 const arquivos = existsSync(FRAGMENTOS)
   ? readdirSync(FRAGMENTOS).filter((f) => /^\d{2}\.json$/.test(f)).sort()
   : [];
 
 if (!arquivos.length) {
+  if (erros.length) {
+    console.error('✖ Append-only abortado:\n');
+    erros.forEach((e) => console.error(`   ${e}`));
+    process.exit(1);
+  }
   console.log(`Nenhum fragmento em _quiz-fragmentos/${AREA}/ — ${AREA}/quiz.json mantido como está.`);
   process.exit(0);
 }
@@ -94,22 +178,38 @@ for (const arquivo of arquivos) {
     avisos.push(`${arquivo}: ${questoes.length} questões (o padrão do projeto é ${POR_TEMA} por tema)`);
   }
 
+  const publicadas = bancoPublicado[tema] || [];
+  const atuais = bancoAtual[tema] || [];
+  const sufixoAtual = atuais.slice(publicadas.length);
+  const jaMontado = appendOnly && sufixoAtual.length === questoes.length &&
+    questoes.every((q, i) => conteudoQuestao(q) === conteudoQuestao(sufixoAtual[i]));
+
   questoes.forEach((q, i) => {
     const ref = `${arquivo} questão ${i + 1}`;
-    if (!q || !NIVEIS.includes(q.n)) erros.push(`${ref}: nível inválido (use 🟢, 🟡 ou 🔴)`);
-    if (!q || typeof q.q !== 'string' || !q.q.trim()) erros.push(`${ref}: enunciado vazio`);
-    if (!q || !Array.isArray(q.a) || q.a.length !== 4 || q.a.some((a) => typeof a !== 'string' || !a.trim()))
-      erros.push(`${ref}: precisa ter quatro alternativas não vazias`);
-    if (!q || !Number.isInteger(q.c) || q.c < 0 || q.c > 3) erros.push(`${ref}: índice da correta inválido`);
-    if (!q || typeof q.e !== 'string' || !q.e.trim()) erros.push(`${ref}: explicação vazia`);
-    if (q && typeof q.q === 'string' && q.q.trim()) {
+    validarQuestao(q, ref);
+    if (!jaMontado && q && typeof q.q === 'string' && q.q.trim()) {
       const chave = normalizar(q.q);
       if (vistas.has(chave)) erros.push(`${ref}: enunciado duplicado de ${vistas.get(chave)}`);
       else vistas.set(chave, ref);
     }
   });
 
-  banco[tema] = questoes;
+  banco[tema] = appendOnly ? (jaMontado ? atuais : [...atuais, ...questoes]) : questoes;
+}
+
+if (appendOnly) {
+  const temasAtuais = Object.keys(bancoAtual).sort();
+  const temasCandidatos = Object.keys({ ...bancoAtual, ...banco }).sort();
+  if (temasAtuais.some((tema, i) => temasCandidatos[i] !== tema)) {
+    erros.push('append-only: os temas existentes precisam permanecer no início da ordem numérica do banco');
+  }
+  for (const [tema, questoes] of Object.entries(bancoAtual)) {
+    const candidatas = banco[tema] || questoes;
+    if (!Array.isArray(candidatas) || candidatas.length < questoes.length ||
+        questoes.some((q, i) => !candidatas[i] || conteudoQuestao(q) !== conteudoQuestao(candidatas[i]))) {
+      erros.push(`append-only: prefixo do tema ${tema} foi alterado (n/q/a/c/e ou ordem)`);
+    }
+  }
 }
 
 if (erros.length) {
@@ -125,7 +225,8 @@ if (avisos.length) {
 }
 
 const ordenado = {};
-for (const tema of Object.keys(banco).sort()) ordenado[tema] = banco[tema];
+const bancoFinal = appendOnly ? { ...bancoAtual, ...banco } : banco;
+for (const tema of Object.keys(bancoFinal).sort()) ordenado[tema] = bancoFinal[tema];
 
 // Mesmo estilo de formatação do balancear-quiz.mjs: uma alternativa por linha
 // para o diff do git ficar legível.
@@ -137,6 +238,6 @@ if (json === atual) {
   console.log(`✔ ${AREA}/quiz.json já está em dia — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
 } else {
   writeFileSync(DESTINO, json, 'utf8');
-  console.log(`✔ ${AREA}/quiz.json escrito — ${Object.keys(ordenado).length} tema(s), ${total} questões.`);
+  console.log(`✔ ${AREA}/quiz.json escrito — ${Object.keys(ordenado).length} tema(s), ${total} questões${appendOnly ? ' (append-only)' : ''}.`);
   console.log(`  Rode "node balancear-quiz.mjs ${AREA}" e "node build-site.mjs".`);
 }

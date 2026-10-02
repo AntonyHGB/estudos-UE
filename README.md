@@ -4,12 +4,12 @@ Material de estudo de medicina com site estático gerado a partir dos markdowns:
 
 | Área | Temas | Questões abertas | Quiz |
 |---|---|---|---|
-| [Urgência e Emergência](urgencia-e-emergencia/) | 12 | 88 | 96 |
-| [Cirurgia](cirurgia/) | 32 | 224 | 256 |
+| [Urgência e Emergência](urgencia-e-emergencia/) | 12 | 88 | 361 |
+| [Cirurgia](cirurgia/) | 32 | 224 | 656 |
 
-> O material de Urgência e Emergência está completo: **12 temas**, **88 questões abertas** com resposta modelo e **96 questões de quiz** (8 por tema). O site é gerado por `node build-site.mjs` e publicado no GitHub Pages — veja [Como rodar local](#como-rodar-local) e [Publicar](#publicar).
+> O material local de Urgência e Emergência contém **12 temas**, **88 questões abertas** com resposta modelo e **361 questões de quiz** (29–31 por tema). O site é gerado por `node build-site.mjs` e publicado no GitHub Pages — veja [Como rodar local](#como-rodar-local) e [Publicar](#publicar).
 
-> A trilha **Cirurgia** integra **32 temas**, **224 questões abertas** e **256 quiz**, com questões de autoria própria. Dos **69 PDFs locais**, **68** têm destino temático ou referência complementar e **1** permanece bloqueado: cirurgia cardíaca é agenda sem respostas. Não há pendência de redação por volume, mas há limites de fonte e cobertura seletiva — não é cobertura integral de cada página nem atualização clínica universal. Veja [`cirurgia/README.md`](cirurgia/README.md) e `_fontes-extraidas/cirurgia/00-matriz-cobertura.md`. PDFs e textos extraídos continuam fora do versionamento/publicação.
+> A trilha **Cirurgia** tem **32 temas**, **224 questões abertas** e **656 questões de quiz**: 24 temas foram expandidos e os temas **09–16** permanecem com as 8 questões publicadas cada (expansão pendente após recusa do provider; não houve reenvio nem nova geração). Dos **69 PDFs locais**, **68** têm destino temático ou referência complementar e **1** permanece bloqueado: cirurgia cardíaca é agenda sem respostas. Há limites de fonte e cobertura seletiva — não é cobertura integral de cada página nem atualização clínica universal. Veja [`cirurgia/README.md`](cirurgia/README.md) e `_fontes-extraidas/cirurgia/00-matriz-cobertura.md`. PDFs e textos extraídos continuam fora do versionamento/publicação.
 
 ## Como funciona
 
@@ -83,6 +83,24 @@ node montar-quiz.mjs          # valida os fragmentos e monta urgencia-e-emergenc
 node balancear-quiz.mjs urgencia-e-emergencia   # rotaciona a posição da correta
 node build-site.mjs           # regenera o site
 ```
+
+Para **expandir** um banco já publicado sem substituir as questões existentes, use o modo explícito append-only e balanceie somente as novas posições:
+
+```bash
+node montar-quiz.mjs --append urgencia-e-emergencia
+node balancear-quiz.mjs --novas urgencia-e-emergencia
+node build-site.mjs
+```
+
+`--append` verifica o prefixo do `quiz.json` contra `HEAD`, preserva questões publicadas (`n/q/a/c/e` e ordem), mantém temas sem fragmento e só aceita novos temas depois dos existentes na ordem numérica. Sem a opção, `montar-quiz.mjs` mantém o comportamento legado de substituição. `balancear-quiz.mjs --novas` também compara com `HEAD`: em cada tema, deixa intacta a quantidade já publicada e balanceia só os índices posteriores. Sem a opção, o balanceamento legado continua abrangendo o banco inteiro. **Não** use o modo legado numa expansão que precisa preservar respostas/sessões. Monte e balanceie antes de commitar; só comece outra expansão após publicar/commitar a anterior, para `HEAD` marcar a fronteira correta.
+
+A idempotência de `--append` exige que o sufixo atual seja exatamente igual ao fragmento **antes do balanceamento**. Depois de balancear ou corrigir um fragmento já integrado, repetir `--append` não substitui o rascunho: pode recusar duplicatas. Nesta integração local, os bancos foram reconstruídos a partir dos fragmentos finais com validação integral dos prefixos de `HEAD` e backup ignorado, sem executar `--append` nem alterar os scripts.
+
+⚠️ Esta integração não é validação clínica das fontes primárias. Há conteúdo didático com limites explicitados nas explicações; a ambiguidade legada de UE tema 11, questão 6 (loxoscelismo moderado e divergência entre fontes oficiais) foi preservada no prefixo publicado, não corrigida nesta rodada.
+
+O build registra um hash SHA-256 do quiz e carrega compatibilidades anteriores do `index.html` gerado/versionado. Só sessões que já guardam SHA-256 podem ser migradas após validação integral do prefixo; simulados legados sem esse digest **não são reinterpretados nem apagados**. Eles ficam preservados localmente, bloqueados com aviso, e só podem ser substituídos após confirmação e cópia local explícita. ⚠️ Não apague os `index.html` anteriores antes de gerar os novos nem entre expansões: eles carregam a cadeia de compatibilidade forte para versões publicadas.
+
+⚠️ Progresso de quiz local/na nuvem ainda usa `fp/chash` de 16 bits e chaves por tema/índice; não tem prova SHA-256 por questão. Append-only mantém essas referências corretas. Uma reescrita/reordenação com índice ainda válido pode continuar associando progresso antigo por índice — o aviso de material alterado não prova que isso foi evitado. A sincronização não foi migrada nesta etapa.
 
 `montar-quiz.mjs` valida o schema de cada fragmento, avisa quando um tema não tem 8 questões e recusa enunciados repetidos entre todos os fragmentos. É idempotente e não quebra se `_quiz-fragmentos/` estiver vazia (o `quiz.json` atual é mantido). Os fragmentos **não são versionados**: só o `quiz.json` montado entra no repositório.
 
@@ -170,7 +188,7 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 - O Auth é inicializado no boot, antes de liberar a tela de estudo, para escolher o namespace correto: sessão autenticada usa chave local por UID; sessão deslogada mantém o namespace legado. Os dados legados não são apagados nem associados automaticamente. Para acessá-los, saia da conta; não há migração automática nem fluxo de cópia implementado. Backups novos guardam UID; backups antigos sem UID falham fechado e são preservados, mas não podem ser restaurados pela interface.
 - Se a inicialização Firebase falhar, o app mostra aviso de estado offline/desconhecido, preserva o legado e usa um namespace isolado de contingência. Não associa dados desse modo a nenhuma conta; ao voltar online, recarregue para identificar a sessão.
 - Marcações limpas viram *tombstones* com carimbo, então uma limpeza feita em um aparelho também some no outro.
-- Se o material mudou (`fp`/`chash`), itens que não existem mais são ignorados e a tela avisa.
+- Se o material mudou (`fp`/`chash`), referências fora do banco são ignoradas e a tela avisa. Como o sync local/nuvem ainda é indexado por tema/posição e usa hashes curtos, um índice válido que passou a apontar para conteúdo reescrito não pode ser identificado com certeza nesta versão.
 
 **Limites conhecidos.** A granularidade do conflito é o item (marcação/resposta), decidido pelo carimbo de tempo: relógios muito fora de sincronia entre aparelhos podem inverter a ordem de dois itens. Se duas pessoas usarem o **mesmo navegador** e ambas tiverem progresso local não sincronizado, a confirmação do primeiro sync decide a quem ele pertence — não há como o site adivinhar. E "Enviar" é uma sobrescrita deliberada: usado em dois aparelhos quase ao mesmo tempo, vale a última gravação.
 
@@ -178,7 +196,10 @@ O progresso continua **local-first**: sem configurar nada, tudo funciona como ho
 
 ```bash
 node build-site.mjs && node testes/nuvem.mjs && node testes/glossario.mjs
+node testes/quiz-append.mjs
 ```
+
+`testes/quiz-append.mjs` cria um Git fixture isolado e bancos artificiais em `/tmp/opencode`; verifica ciclos 8→30→40, limites por tema vindos do `HEAD`, preflight sem escrita parcial, questões abertas/progresso local-nuvem, migração de simulados somente com SHA-256 e retenção de sessões legadas sem digest. Não altera os bancos nem os sites reais.
 
 `testes/nuvem.mjs` roda o `index.html` gerado num contexto Node com DOM/localStorage mockados e cobre snapshot, mesclagem por timestamp, aplicação com validação de índices, bloqueio de troca de conta e as regras default-deny. Sem argumento, ele testa **todas as áreas geradas** (cada pasta de primeiro nível com `index.html`), uma por processo; com argumento, testa só os arquivos indicados. O teste assume o padrão do banco: ao menos 6 questões abertas e 3 de quiz no primeiro tema. Testes que dependem de rede/CDN e de duas contas reais ficam no roteiro manual abaixo.
 

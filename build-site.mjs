@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
+import { createHash } from 'node:crypto';
 
 const ROOT = fileURLToPath(new URL('.', import.meta.url));
 
@@ -294,6 +295,88 @@ function fnv1a(str) {
     h = Math.imul(h, 0x01000193) >>> 0;
   }
   return h >>> 0;
+}
+
+// Hash forte do banco de quiz em sua ordem de apresentação. O hash curto fp/chash
+// continua no formato legado para progresso; este identificador protege sessões
+// novas e, junto dos snapshots abaixo, permite validar prefixos de versões antigas.
+function quizHash(topics, counts) {
+  const selecionados = counts ? topics.filter((t) => Object.prototype.hasOwnProperty.call(counts, t.id)) : topics;
+  const material = selecionados.map((t) => {
+    const limite = counts && Object.prototype.hasOwnProperty.call(counts, t.id)
+      ? counts[t.id]
+      : t.quiz.length;
+    return [t.id, t.quiz.slice(0, limite).map((q) => [q.n, q.q, q.a, q.c, q.e])];
+  });
+  return createHash('sha256').update(JSON.stringify(material)).digest('hex');
+}
+
+function lerCompatQuizAnterior(site, topics, fingerprint, contentHash) {
+  const caminho = join(ROOT, site.folder, 'index.html');
+  if (!existsSync(caminho)) return [];
+  let anterior;
+  try {
+    const html = readFileSync(caminho, 'utf8');
+    const bloco = html.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/);
+    if (!bloco) return [];
+    anterior = JSON.parse(bloco[1]);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(anterior.topics) || anterior.topics.some((t) =>
+    !t || typeof t.id !== 'string' || !Array.isArray(t.quiz) || t.quiz.some((q) => !q || !Array.isArray(q.a))
+  )) return [];
+
+  const candidatos = Array.isArray(anterior.quizCompat) ? anterior.quizCompat.slice() : [];
+  const contagensAnteriores = Object.fromEntries(anterior.topics.map((t) => [t.id, t.quiz.length]));
+  const hashAnterior = anterior.quizHash || quizHash(anterior.topics);
+  // Artefato legado sem hash forte sempre precisa de uma âncora de transição.
+  // Em builds seguintes, não acrescentamos o próprio banco atual como histórico:
+  // o hash forte da versão atual já valida sessões criadas pelo código novo.
+  if (!anterior.quizHash || hashAnterior !== quizHash(topics) ||
+      anterior.fp !== fingerprint || anterior.chash !== contentHash) {
+    candidatos.push({
+      fp: anterior.fp,
+      chash: anterior.chash,
+      quizHash: hashAnterior,
+      prefixHash: quizHash(anterior.topics),
+      counts: Object.entries(contagensAnteriores),
+    });
+  }
+
+  const compat = [];
+  const vistos = new Set();
+  for (const c of candidatos) {
+    if (!c || !Number.isInteger(c.fp) || !Number.isInteger(c.chash) ||
+        typeof c.quizHash !== 'string' || !Array.isArray(c.counts) ||
+        typeof c.prefixHash !== 'string' || c.quizHash !== c.prefixHash) continue;
+    const counts = {};
+    let valido = true;
+    for (const par of c.counts) {
+      if (!Array.isArray(par) || par.length !== 2 || typeof par[0] !== 'string' ||
+          !Number.isInteger(par[1]) || par[1] < 0 || Object.prototype.hasOwnProperty.call(counts, par[0])) {
+        valido = false;
+        break;
+      }
+      counts[par[0]] = par[1];
+    }
+    const ids = Object.keys(counts);
+    if (!valido || !ids.length || topics.length < ids.length ||
+        topics.slice(0, ids.length).some((t, i) => t.id !== ids[i]) ||
+        topics.some((t) => Object.prototype.hasOwnProperty.call(counts, t.id) && counts[t.id] > t.quiz.length) ||
+        quizHash(topics, counts) !== c.prefixHash) continue;
+    const chave = `${c.fp}:${c.chash}:${c.quizHash}`;
+    if (vistos.has(chave)) continue;
+    vistos.add(chave);
+    compat.push({
+      fp: c.fp,
+      chash: c.chash,
+      quizHash: c.quizHash,
+      prefixHash: c.prefixHash,
+      counts: ids.map((id) => [id, counts[id]]),
+    });
+  }
+  return compat;
 }
 
 /* ================================ markdown → HTML ================================ */
@@ -1329,6 +1412,8 @@ function buildSite(site) {
     .join('|');
   const fingerprint = fnv1a(layoutKey) & 0xffff;
   const contentHash = fnv1a(contentKey) & 0xffff;
+  const strongQuizHash = quizHash(topics);
+  const quizCompat = lerCompatQuizAnterior(site, topics, fingerprint, contentHash);
 
   const data = {
     siteKey: site.folder,
@@ -1337,6 +1422,8 @@ function buildSite(site) {
     emoji: site.emoji,
     fp: fingerprint,
     chash: contentHash,
+    quizHash: strongQuizHash,
+    quizCompat,
     firebase: firebaseConfig,
     firebaseSdk: FIREBASE_SDK_VERSION,
     topics: topics.map((t) => ({
@@ -2276,28 +2363,81 @@ function renderNuvem(){
    entrega metade da resposta. Aqui as questoes vem de todos os temas
    misturadas e o gabarito so aparece no fim. */
 var simAviso = '';
+var simBloqueadoKey = '';
+function simCompatibilidade(s){
+  if (!s || typeof s.quizHash !== 'string' || !/^[a-f0-9]{64}$/.test(s.quizHash) ||
+      !Array.isArray(s.itens) || !s.itens.length || !Array.isArray(s.resp) || s.resp.length !== s.itens.length ||
+      !Number.isInteger(s.pos) || s.pos < 0 || s.pos >= s.itens.length || typeof s.fim !== 'boolean' ||
+      s.resp.some(function(r){ return r !== null && (!Number.isInteger(r) || r < 0 || r > 3); })) return false;
+  var limites = {};
+  if (s.quizHash === DATA.quizHash){
+    DATA.topics.forEach(function(t){ limites[t.id] = t.quiz.length; });
+  } else {
+    var compat = (DATA.quizCompat || []).find(function(v){
+      return v.fp === s.fp && v.chash === s.chash && v.quizHash === s.quizHash;
+    });
+    if (!compat || !Array.isArray(compat.counts)) return false;
+    compat.counts.forEach(function(par){
+      if (Array.isArray(par) && par.length === 2 && typeof par[0] === 'string' && Number.isInteger(par[1])) limites[par[0]] = par[1];
+    });
+  }
+  return s.itens.every(function(ref){
+    return Array.isArray(ref) && typeof ref[0] === 'string' && Number.isInteger(ref[1]) &&
+      Object.prototype.hasOwnProperty.call(limites, ref[0]) && ref[1] >= 0 && ref[1] < limites[ref[0]];
+  });
+}
 function simGet(){
+  var raw = LS.get(SKEY + ':sim');
+  if (!raw){ if (simBloqueadoKey === SKEY + ':sim') simBloqueadoKey = ''; return null; }
   var s;
-  try { s = JSON.parse(LS.get(SKEY + ':sim') || 'null'); } catch(e){ s = null; }
-  if (!s) return null;
-  if (!Array.isArray(s.itens) || !Array.isArray(s.resp)){
-    simClear();
-    simAviso = 'O simulado salvo estava corrompido e foi descartado.';
+  try { s = JSON.parse(raw); } catch(e){ s = null; }
+  if (!simCompatibilidade(s)){
+    simBloqueadoKey = SKEY + ':sim';
+    simAviso = s && !s.quizHash
+      ? 'Esta sessão antiga não guarda SHA-256 do quiz; não é possível provar que as questões e alternativas continuam iguais. Ela foi preservada neste navegador, sem migração.'
+      : 'A sessão não corresponde a um SHA-256 verificável do quiz atual. Ela foi preservada neste navegador, sem migração.';
     return null;
   }
-  // O simulado guarda a versão do material: se questões ou temas mudaram, as
-  // referências antigas não valem mais — descarta em vez de associar errado.
-  if (s.fp !== DATA.fp || s.chash !== DATA.chash){
-    simClear();
-    simAviso = 'O simulado salvo era de uma versão anterior do material e foi descartado — comece outro.';
-    return null;
+  if (s.fp !== DATA.fp || s.chash !== DATA.chash || s.quizHash !== DATA.quizHash){
+    s.fp = DATA.fp;
+    s.chash = DATA.chash;
+    s.quizHash = DATA.quizHash;
+    simSet(s);
   }
+  if (simBloqueadoKey === SKEY + ':sim') simBloqueadoKey = '';
   return s;
 }
 function simSet(s){ LS.set(SKEY + ':sim', JSON.stringify(s)); }
-function simClear(){ LS.del(SKEY + ':sim'); }
+function simClear(){ LS.del(SKEY + ':sim'); if (simBloqueadoKey === SKEY + ':sim') simBloqueadoKey = ''; }
 
-function simIniciar(n){
+function simArquivarEIniciar(n){
+  var chave = SKEY + ':sim', raw = LS.get(chave);
+  if (!raw){ simBloqueadoKey = ''; simIniciar(n); return; }
+  if (!confirm('Não é possível migrar esta sessão com segurança. Guardar uma cópia local antes de iniciar outro simulado? A cópia não será enviada à nuvem.')) return;
+  var backupKey = SKEY + ':sim:backup', backupAnterior = LS.get(backupKey);
+  if (backupAnterior && backupAnterior !== raw &&
+      !confirm('Já existe uma cópia local de outra sessão. Substituí-la pela cópia atual?')) return;
+  LS.set(backupKey, raw);
+  if (LS.get(backupKey) !== raw){
+    simAviso = 'Não foi possível confirmar a cópia local. A sessão original continua preservada; libere espaço e tente novamente.';
+    renderSimulado();
+    return;
+  }
+  try { LS.del(chave); } catch(e){}
+  if (LS.get(chave) !== null){
+    simAviso = 'A cópia local foi guardada, mas a sessão original não pôde ser removida. Nada novo foi iniciado.';
+    renderSimulado();
+    return;
+  }
+  simBloqueadoKey = '';
+  simIniciar(n, 'A sessão anterior foi guardada em uma cópia local deste navegador; ela não foi enviada à nuvem.');
+}
+
+function simIniciar(n, aviso){
+  if (LS.get(SKEY + ':sim')){
+    var existente = simGet();
+    if (!existente && LS.get(SKEY + ':sim')){ renderSimulado(); return; }
+  }
   var todas = [];
   DATA.topics.forEach(function(t){ t.quiz.forEach(function(_, i){ todas.push([t.id, i]); }); });
   for (var k = todas.length - 1; k > 0; k--){
@@ -2305,8 +2445,8 @@ function simIniciar(n){
     var tmp = todas[k]; todas[k] = todas[j]; todas[j] = tmp;
   }
   var itens = todas.slice(0, Math.min(n, todas.length));
-  simAviso = '';
-  simSet({ fp: DATA.fp, chash: DATA.chash, itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
+  simAviso = aviso || '';
+  simSet({ fp: DATA.fp, chash: DATA.chash, quizHash: DATA.quizHash, itens: itens, resp: itens.map(function(){ return null; }), pos: 0, fim: false });
   renderSimulado();
 }
 function simEscolher(j){
@@ -2347,33 +2487,33 @@ function renderSimulado(){
       else removidos++;
     });
     if (removidos){
-      if (!itens.length){
-        simClear(); s = null;
-        simAviso = 'O simulado salvo apontava para questões que não existem mais e foi descartado.';
-      } else {
-        s.itens = itens; s.resp = resp;
-        s.pos = Math.max(0, Math.min(s.pos, s.itens.length - 1));
-        simSet(s);
-        simAviso = removidos + ' questão(ões) de uma versão anterior do material foram ignoradas.';
-      }
+      s = null;
+      simBloqueadoKey = SKEY + ':sim';
+      simAviso = 'A sessão aponta para questão(ões) que não podem ser verificadas no banco atual. Ela foi preservada sem remover respostas.';
     }
   }
-  if (simAviso){ h += '<div class="note err">⚠️ ' + simAviso + '</div>'; simAviso = ''; }
+  if (simAviso){ h += '<div class="note warn">⚠️ ' + simAviso + '</div>'; simAviso = ''; }
 
   if (!s){
     var totalQ = DATA.topics.reduce(function(a,t){ return a + t.quiz.length; }, 0);
     h += '<div class="topic-head"><h1>📝 Simulado</h1>' +
          '<p class="sub">Questões sorteadas de todos os ' + DATA.topics.length + ' temas, misturadas. ' +
          'O gabarito só aparece no fim, com o resultado separado por tema e por nível.</p></div>';
-    h += '<div class="sync-box"><h3>Quantas questões?</h3>' +
-         '<div class="seg">' +
-         '<button onclick="simIniciar(10)">10<br><span style="font-weight:400;font-size:.8em">~5 min</span></button>' +
-         '<button onclick="simIniciar(20)">20<br><span style="font-weight:400;font-size:.8em">~10 min</span></button>' +
-         '<button onclick="simIniciar(40)">40<br><span style="font-weight:400;font-size:.8em">~20 min</span></button>' +
-         '<button onclick="simIniciar(' + totalQ + ')">Todas<br><span style="font-weight:400;font-size:.8em">' + totalQ + ' questões</span></button>' +
-         '</div>' +
-         '<p style="color:var(--muted);font-size:.87em;margin-top:12px">As respostas do simulado são independentes do quiz por tema — fazer simulado não altera o seu progresso nos temas.</p>' +
-         '</div>';
+     h += '<div class="sync-box"><h3>Quantas questões?</h3><div class="seg">';
+     if (simBloqueadoKey === SKEY + ':sim'){
+       h += '<button onclick="simArquivarEIniciar(10)">Guardar cópia local e iniciar · 10</button>' +
+            '<button onclick="simArquivarEIniciar(20)">Guardar cópia local e iniciar · 20</button>' +
+            '<button onclick="simArquivarEIniciar(40)">Guardar cópia local e iniciar · 40</button>' +
+            '<button onclick="simArquivarEIniciar(' + totalQ + ')">Guardar cópia local e iniciar · todas</button>';
+     } else {
+       h += '<button onclick="simIniciar(10)">10<br><span style="font-weight:400;font-size:.8em">~5 min</span></button>' +
+            '<button onclick="simIniciar(20)">20<br><span style="font-weight:400;font-size:.8em">~10 min</span></button>' +
+            '<button onclick="simIniciar(40)">40<br><span style="font-weight:400;font-size:.8em">~20 min</span></button>' +
+            '<button onclick="simIniciar(' + totalQ + ')">Todas<br><span style="font-weight:400;font-size:.8em">' + totalQ + ' questões</span></button>';
+     }
+     h += '</div>' +
+          '<p style="color:var(--muted);font-size:.87em;margin-top:12px">As respostas do simulado são independentes do quiz por tema — fazer simulado não altera o seu progresso nos temas.</p>' +
+          '</div>';
     document.getElementById('main').innerHTML = h;
     window.scrollTo(0,0);
     return;

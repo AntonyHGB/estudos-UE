@@ -30,3 +30,11 @@ Responda em voz alta antes de revelar a resposta. Acertar lendo é reconhecer; a
 - `index.html`, `manifest.webmanifest`, `sw.js`, `icon-*.png` — **gerados** por `node build-site.mjs`; nunca editar à mão.
 
 As regras completas de autoria e publicação estão no `README.md` da raiz do projeto.
+
+## Banco de quiz integrado localmente
+
+O banco local contém **361 questões em 12 temas** (29–31 por tema). A integração preserva as 8 questões
+publicadas por tema, inclusive ordem das alternativas e gabarito; as questões novas foram balanceadas
+somente após esse prefixo. Isso descreve o estado local, não um deploy nem uma revisão clínica integral.
+
+⚠️ As correções dos fragmentos finais foram integradas ao banco local; referências didáticas não equivalem a fontes primárias clinicamente validadas. A questão 6 do tema 11, já publicada, mantém a ambiguidade de conduta no loxoscelismo moderado por divergência entre fontes oficiais; o prefixo legado não foi alterado.

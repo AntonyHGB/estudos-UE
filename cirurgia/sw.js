@@ -1,5 +1,5 @@
 // Gerado por build-site.mjs — não editar à mão.
-const CACHE = 'estudos-cirurgia-1w52np4';
+const CACHE = 'estudos-cirurgia-1ufaef1';
 // Só apaga caches DESTE app (mesmo prefixo). Outros projetos no mesmo domínio
 // (ex.: /estudos) têm os próprios caches e não são tocados.
 const CACHE_PREFIX = 'estudos-cirurgia-';

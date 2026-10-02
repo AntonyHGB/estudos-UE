@@ -1,6 +1,6 @@
 // balancear-quiz.mjs — redistribui a POSIÇÃO da alternativa correta nos quiz.json.
 //
-// Uso: node balancear-quiz.mjs engenharia-de-dados machine-learning
+// Uso: node balancear-quiz.mjs [--novas] area [area...]
 //
 // Por que existe: escrevendo as questões é natural deixar a correta sempre na
 // mesma posição, e aí dá para gabaritar o quiz marcando sempre a mesma letra.
@@ -17,6 +17,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const ROOT = new URL('.', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
@@ -36,16 +37,31 @@ function padraoDa(area, tema) {
 const CITA_LETRA =
   /\b(?:op(?:ç|c)(?:ã|a)o|op(?:ç|c)(?:õ|o)es|alternativas?|letras?|itens?|item)\s+["“(]?[A-E]\b/gi;
 
-const areas = process.argv.slice(2);
-if (!areas.length) {
-  console.error('Uso: node balancear-quiz.mjs <area> [area...]');
+const args = process.argv.slice(2);
+const novasApenas = args.includes('--novas');
+const areas = args.filter((arg) => arg !== '--novas');
+if (!areas.length || args.some((arg) => arg.startsWith('-') && arg !== '--novas')) {
+  console.error('Uso: node balancear-quiz.mjs [--novas] <area> [area...]');
   process.exit(1);
 }
 
 let houveErro = false;
 const resumo = [];
+const writes = [];
+
+function conteudoQuestao(q) {
+  if (!q || typeof q.n !== 'string' || typeof q.q !== 'string' || !Array.isArray(q.a) ||
+      q.a.length !== 4 || q.a.some((a) => typeof a !== 'string') ||
+      !Number.isInteger(q.c) || q.c < 0 || q.c > 3 || typeof q.e !== 'string') return null;
+  return JSON.stringify([q.n, q.q, q.a, q.c, q.e]);
+}
 
 for (const area of areas) {
+  if (!area || area === '.' || area === '..' || /[/\\:]/.test(area)) {
+    console.error(`✖ Área inválida: ${area}`);
+    houveErro = true;
+    continue;
+  }
   const caminho = join(ROOT, area, 'quiz.json');
   if (!existsSync(caminho)) {
     console.error(`✖ ${area}: quiz.json não encontrado`);
@@ -55,10 +71,55 @@ for (const area of areas) {
 
   const banco = JSON.parse(readFileSync(caminho, 'utf8'));
 
-  // 1. Trava de segurança: explicação que cita letra quebraria com o embaralhamento.
+  let anteriores = {};
+  if (novasApenas) {
+    // HEAD é o banco publicado antes da montagem. Sem essa proveniência não há
+    // como distinguir com segurança questões já balanceadas de questões novas.
+    try {
+      anteriores = JSON.parse(execFileSync('git', ['show', `HEAD:${area}/quiz.json`], {
+        cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+      }));
+    } catch (e) {
+      console.error(`✖ ${area}: não foi possível ler HEAD:${area}/quiz.json; nada será escrito.`);
+      houveErro = true;
+      continue;
+    }
+    if (!anteriores || typeof anteriores !== 'object' || Array.isArray(anteriores) ||
+        !banco || typeof banco !== 'object' || Array.isArray(banco)) {
+      console.error(`✖ ${area}: banco atual ou publicado inválido; nada será escrito.`);
+      houveErro = true;
+      continue;
+    }
+    const temasAnteriores = Object.keys(anteriores).sort();
+    const temasAtuais = Object.keys(banco).sort();
+    const prefixoInvalido = temasAtuais.length < temasAnteriores.length ||
+      temasAnteriores.some((tema, i) => temasAtuais[i] !== tema) ||
+      temasAnteriores.some((tema) => !Array.isArray(anteriores[tema]) || !Array.isArray(banco[tema]) ||
+        banco[tema].length < anteriores[tema].length ||
+        anteriores[tema].some((q, i) => !conteudoQuestao(q) || !conteudoQuestao(banco[tema][i]) ||
+          conteudoQuestao(q) !== conteudoQuestao(banco[tema][i])));
+    if (prefixoInvalido) {
+      console.error(`✖ ${area}: prefixo/ordem do banco diverge de HEAD; nenhuma área será escrita.`);
+      houveErro = true;
+      continue;
+    }
+  }
+
+  const bancoMalformado = Object.values(banco).some((questoes) =>
+    !Array.isArray(questoes) || questoes.some((q) => !conteudoQuestao(q))
+  );
+  if (bancoMalformado) {
+    console.error(`✖ ${area}: banco contém tema/questão inválida; nada será escrito.`);
+    houveErro = true;
+    continue;
+  }
+
+  // 1. Trava de segurança nas questões que serão alteradas.
   const citacoes = [];
   for (const [tema, questoes] of Object.entries(banco)) {
     questoes.forEach((q, i) => {
+      const inicio = novasApenas ? (anteriores[tema] || []).length : 0;
+      if (i < inicio) return;
       const achados = q.e.match(CITA_LETRA);
       if (achados) citacoes.push(`${area} tema ${tema} questão ${i + 1}: "${achados.join('", "')}"`);
     });
@@ -79,6 +140,7 @@ for (const area of areas) {
   for (const [tema, questoes] of Object.entries(banco)) {
     const padrao = padraoDa(area, tema);
     questoes.forEach((q, i) => {
+      if (novasApenas && i < (anteriores[tema] || []).length) return;
       const alvo = padrao[i % padrao.length];
       if (alvo >= q.a.length) return; // questão com menos alternativas que o padrão exige
       if (q.c === alvo) return;
@@ -90,9 +152,19 @@ for (const area of areas) {
     });
   }
 
+  if (novasApenas) {
+    const mudouPrefixo = Object.entries(anteriores).some(([tema, questoes]) =>
+      questoes.some((q, i) => conteudoQuestao(q) !== conteudoQuestao(banco[tema][i])));
+    if (mudouPrefixo) {
+      console.error(`✖ ${area}: prefixo publicado mudou; nada foi escrito.`);
+      houveErro = true;
+      continue;
+    }
+  }
+
   // Mantém uma alternativa por linha, para o diff do git ficar legível.
   const json = JSON.stringify(banco, null, 2).replace(/\n {6}/g, ' ').replace(/\n {4}\]/g, ']');
-  writeFileSync(caminho, json + '\n', 'utf8');
+  const atualTexto = readFileSync(caminho, 'utf8');
 
   // 3. Confere a distribuição resultante.
   const letras = [0, 0, 0, 0, 0];
@@ -108,8 +180,11 @@ for (const area of areas) {
     .map((n, k) => `${'ABCD'[k]}=${((100 * n) / total).toFixed(0)}%`)
     .join('  ');
   resumo.push(`✔ ${area}: ${trocas} trocas em ${total} questões — ${dist}`);
+  if (json + '\n' !== atualTexto) writes.push([caminho, json + '\n']);
 }
 
-resumo.forEach((r) => console.log(r));
 if (houveErro) process.exit(1);
-console.log('\nPosições balanceadas. Rode "node build-site.mjs" para regerar o site.');
+// Nenhuma escrita acontece até todas as áreas passarem pelo preflight.
+for (const [caminho, conteudo] of writes) writeFileSync(caminho, conteudo, 'utf8');
+resumo.forEach((r) => console.log(r));
+console.log(`\nPosições balanceadas${novasApenas ? ' somente após os prefixos publicados de cada tema' : ''}. Rode "node build-site.mjs" para regerar o site.`);

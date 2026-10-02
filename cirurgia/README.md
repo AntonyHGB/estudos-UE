@@ -42,10 +42,22 @@ Toda afirmação dos temas vem de **documento de origem identificado**, com arqu
 
 Os 46 decks são slides, sem referência bibliográfica formal: onde um número do deck também aparece numa diretriz, o tema confere e **explicita a divergência** quando existe (exemplo: o corte de 200 mL/h na toracotomia — janela de tempo diferente entre o material e a diretriz WSES-AAST 2025).
 
-## Temas integrados localmente (32)
+## Temas e bancos integrados localmente (32)
 
-**224 questões abertas e 256 quiz**: 7 abertas e 8 de múltipla escolha por tema. “Integrado” descreve o
-build local, não um deploy desta rodada. As citações “slide N” nos decks correspondem à **página N do
+**224 questões abertas e 656 questões de quiz** no build local; sem deploy nesta rodada. Os bancos estão
+assim distribuídos:
+
+| Temas | Questões no banco | Situação |
+|---|---:|---|
+| 01–08 | 221 | Expandidos (+157 sobre o publicado) |
+| 09–16 | 64 | **Pendente**: 8 questões originais por tema, mantidas sem alteração após recusa do provider; sem reenvio ou nova geração |
+| 17–24 | 206 | Expandidos (+142 sobre o publicado) |
+| 25–32 | 165 | Expandidos (+101 sobre o publicado) |
+| **Total** | **656** | 24 temas expandidos; 8 temas aguardam decisão sobre a pendência 09–16 |
+
+⚠️ As correções dos fragmentos finais foram integradas ao banco local sem alterar as questões publicadas. Esta rodada não valida clinicamente as fontes primárias; referências didáticas e limites de cobertura permanecem explícitos. Os fragmentos pendentes 09–16 não foram lidos nem integrados.
+
+As 224 questões abertas continuam em 7 por tema. As citações “slide N” nos decks correspondem à **página N do
 PDF local**, não à paginação interna do compilado; os caminhos dos arquivos estão em cada tema.
 
 | Tema | Fontes | Páginas citadas |
@@ -126,16 +138,13 @@ node build-site.mjs
 node testes/nuvem.mjs
 ```
 
-Validação em 30/09/2026: montagem/schema, balanceamento (64 corretas por posição), parser (7 abertas e
-8 quiz em cada um dos 32 temas), enunciados únicos e build determinístico passaram. Os testes de
-progresso passaram nas duas áreas: **62 testes, zero falhas**. Todos os 20 arquivos versionados de UE
-permaneceram byte a byte iguais ao `HEAD` local. Há **13 avisos não bloqueantes** de comprimento de
-alternativas nos temas 08–12.
-
-❓ A validação de interface no navegador nesta retomada não foi executada: o servidor para a cópia
-temporária sem Firebase foi bloqueado por permissão de diretório externo. Os testes Node usam mocks;
-não comprovam os fluxos de interface nem o funcionamento remoto da nuvem. Sem commit/push/deploy
-nesta integração.
+Validação local em 01/10/2026: build, schema, prefixos publicados, enunciados únicos e determinismo
+passaram. A correta ficou balanceada em 25% por posição nas duas áreas; a auditoria registra **53 avisos**
+de comprimento em Urgência e Emergência e **15** em Cirurgia, sem erros bloqueantes. Os testes de
+progresso passaram nas duas áreas: **62 testes, zero falhas**; glossário e os **11 casos** de append
+também passaram. O prefixo publicado de todos os temas permanece intacto. A validação local não é
+revisão clínica integral nem confirma sincronização com contas reais. Sem commit/push/deploy nesta
+integração.
 
 ### Lacuna declarada, não preenchida por inferência
 
