@@ -1907,7 +1907,6 @@ function renderHome(){
     h += '<a class="home-card" href="#topic/' + t.id + '">' +
          '<div class="n">TEMA ' + t.id + (rev.devendo && qp.answered ? ' · ⏰ revisar' : '') + '</div>' +
          '<div class="t">' + t.shortTitle + '</div>' +
-         '<div class="s">' + t.subtitle + '</div>' +
          '<div class="qn">❓ ' + t.cards.length + ' abertas · 🎯 ' + t.quiz.length + ' quiz' +
          (qp.answered ? ' — ' + qp.correct + '/' + qp.answered + ' acertos' : '') +
          (quando ? ' · ' + quando : '') + '</div>' +
@@ -2977,8 +2976,7 @@ function renderTopic(id, tab){
   var cur = tab || 'estudo';
   if (cur === 'quiz' && !t.quiz.length) cur = 'questoes';
 
-  var h = '<div class="topic-head"><h1>' + t.fullTitle + '</h1>' +
-          (t.subtitle ? '<p class="sub">' + t.subtitle + '</p>' : '') + '</div>';
+  var h = '<div class="topic-head"><h1>' + t.fullTitle + '</h1></div>';
   h += '<div class="tabs" role="tablist" aria-label="Modo de estudo">' +
        '<button class="tab' + (cur==='estudo'?' active':'') + '" role="tab" aria-selected="' + (cur==='estudo') + '" onclick="goTab(\\'' + id + '\\',\\'estudo\\')">📖 Estudo</button>' +
        '<button class="tab' + (cur==='quiz'?' active':'') + '" role="tab" aria-selected="' + (cur==='quiz') + '" onclick="goTab(\\'' + id + '\\',\\'quiz\\')">🎯 Quiz <span class="count">(' + t.quiz.length + ')</span></button>' +
