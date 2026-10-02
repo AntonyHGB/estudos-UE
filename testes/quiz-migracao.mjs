@@ -39,13 +39,14 @@ const CORRECOES = {
   },
 };
 const hashFields = (fields) => createHash('sha256').update(JSON.stringify(fields)).digest('hex');
-const headBank = JSON.parse(execFileSync('git', ['show', 'HEAD:cirurgia/quiz.json'], { cwd: root, encoding: 'utf8' }));
+const BASELINE = 'd252a14ea5684260383bc3c27f2a80ca7528a7db';
+const headBank = JSON.parse(execFileSync('git', ['show', `${BASELINE}:cirurgia/quiz.json`], { cwd: root, encoding: 'utf8' }));
 for (const [ref, expected] of Object.entries(CORRECOES)) {
-  assert.equal(hashFields(expected.old), expected.oldHash, `${ref}: hash completo antigo esperado`);
+  assert.equal(hashFields(expected.old), expected.oldHash, `${ref}: hash completo antigo de HEAD ${BASELINE}`);
   const [topic, index] = ref.split(':');
   const old = headBank[topic][Number(index)];
-  assert.deepEqual([old.n, old.q, old.a, old.c, old.e], expected.old, `${ref}: conteúdo antigo exato de HEAD`);
-  assert.equal(hashFields([old.n, old.q, old.a, old.c, old.e]), expected.oldHash, `${ref}: SHA-256 completo em HEAD`);
+  assert.deepEqual([old.n, old.q, old.a, old.c, old.e], expected.old, `${ref}: conteúdo antigo exato de HEAD ${BASELINE}`);
+  assert.equal(hashFields([old.n, old.q, old.a, old.c, old.e]), expected.oldHash, `${ref}: SHA-256 completo em HEAD ${BASELINE}`);
 }
 const generatedHtml = readFileSync(`${root}/cirurgia/index.html`, 'utf8');
 const generatedData = JSON.parse(generatedHtml.match(/<script id="site-data" type="application\/json">([\s\S]*?)<\/script>/)[1]);
