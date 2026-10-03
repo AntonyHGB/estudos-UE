@@ -203,7 +203,7 @@ node testes/quiz-append.mjs
 node testes/quiz-notas.mjs
 ```
 
-`testes/smoke-site.mjs` executa o JavaScript real das páginas UE e Cirurgia num DOM mínimo de Node: confere trilha/cards e tema sem subtítulo, responde uma questão corretamente e verifica resultado/explicação. Não usa browser, rede, Firebase nem progresso real; é um smoke do renderer/runtime, não um teste de browser.
+`testes/smoke-site.mjs` executa o JavaScript real das páginas UE e Cirurgia num DOM mínimo de Node: confere trilha/cards e tema sem subtítulo, responde questões correta e incorretamente, verifica resultados/explicações e confirma que uma resposta registrada não é sobrescrita por outra seleção. Não usa browser, rede, Firebase nem progresso real; é um smoke do renderer/runtime, não um teste de browser.
 
 `testes/pages-artifact.mjs` testa o preparo isolado do Pages artifact: exige os arquivos estáticos allowlisted, verifica os caminhos do hub, manifest e service worker e recusa qualquer arquivo extra. O conteúdo e o runtime já estão embutidos nos `index.html`; não são copiados fontes, bancos avulsos, scripts de build/teste, documentação nem `.git`.
 
