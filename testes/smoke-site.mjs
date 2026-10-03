@@ -89,9 +89,20 @@ function smokeArea(area) {
   assert.match(main.innerHTML, /✅ Correto!/, `${area}: seleção correta não gerou resultado`);
   assert.match(main.innerHTML, /class="qz-exp"/, `${area}: explicação da resposta não foi renderizada`);
   assert.ok(main.innerHTML.includes(question.e), `${area}: texto da explicação não aparece no resultado`);
+
+  const secondQuestion = topic.quiz[1];
+  assert.ok(secondQuestion, `${area}: é necessária uma segunda questão para o smoke de resposta incorreta`);
+  const wrongAnswer = secondQuestion.c === 0 ? 1 : 0;
+  vm.runInContext(`answerQuiz(${JSON.stringify(topic.id)}, 1, ${wrongAnswer})`, context);
+  vm.runInContext(`renderTopic(${JSON.stringify(topic.id)}, 'quiz')`, context);
+  assert.match(main.innerHTML, /❌ Você marcou/, `${area}: resposta incorreta não foi identificada`);
+  assert.ok(main.innerHTML.includes(secondQuestion.e), `${area}: explicação da resposta incorreta não aparece`);
+  vm.runInContext(`answerQuiz(${JSON.stringify(topic.id)}, 1, ${secondQuestion.c})`, context);
+  vm.runInContext(`renderTopic(${JSON.stringify(topic.id)}, 'quiz')`, context);
+  assert.match(main.innerHTML, /❌ Você marcou/, `${area}: resposta já registrada foi alterada por nova seleção`);
   assert.deepEqual(errors, [], `${area}: erros no console do runtime: ${errors.join('; ')}`);
 
-  console.log(`smoke-site: ${area} — trilha/cards, tópico sem subtítulo, quiz correto e explicação — PASS`);
+  console.log(`smoke-site: ${area} — trilha/cards, tópico sem subtítulo, respostas corretas/incorretas e explicações — PASS`);
 }
 
 for (const area of areas) smokeArea(area);
